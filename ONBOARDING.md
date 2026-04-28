@@ -60,13 +60,13 @@ Use this path when you are starting a brand-new project with no existing board o
 Run once per machine, inside your project directory:
 
 ```bash
-claude plugin install https://<your-gitlab-host>/bitkub/bitkub-pm-skills
+claude plugin install https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
 ```
 
 To install globally (all projects on this machine):
 
 ```bash
-claude plugin install --scope user https://<your-gitlab-host>/bitkub/bitkub-pm-skills
+claude plugin install --scope user https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
 ```
 
 Verify: open Claude Code and type `/help`. You should see `/pm-prd`, `/pm-standup`, `/pm-bug`, `/pm-breakdown`, `/pm-cr` listed.
@@ -179,7 +179,7 @@ Use this path when your project already has a GitLab board, existing issues, and
 Same as Path A Step 1.
 
 ```bash
-claude plugin install https://<your-gitlab-host>/bitkub/bitkub-pm-skills
+claude plugin install https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
 ```
 
 ---
