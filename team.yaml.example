@@ -1,0 +1,23 @@
+# team.yaml — shared team roster
+# Copy this file to your PROJECT ROOT as team.yaml and commit it.
+# Each team member's .env is gitignored and personal.
+#
+# Role values: PM | PO | Dev | QA | SM | DevOps
+
+team:
+  project: KUB Wallet V3
+  members:
+    - display_name: Yo Tharit
+      gitlab_username: yo.tharit
+      role: PM
+      email: yo.tharit@bitkub.com
+
+    - display_name: Noom
+      gitlab_username: noom.example
+      role: PO
+      email: noom@bitkub.com
+
+    - display_name: Earn
+      gitlab_username: earn.example
+      role: Dev
+      email: earn@bitkub.com

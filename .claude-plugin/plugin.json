@@ -1,0 +1,8 @@
+{
+  "name": "kub-wallet-pm",
+  "description": "IT Project Management Agent for software projects (Web, Mobile, Blockchain, Smart Contract) — PRD generation, standup, defect tracking, breakdown, and GitLab integration",
+  "author": {
+    "name": "Bitkub PM Team",
+    "email": "yo.tharit@bitkub.com"
+  }
+}

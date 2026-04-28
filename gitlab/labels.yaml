@@ -1,0 +1,197 @@
+# GitLab label definitions
+# Reference: create via UI (Project → Manage → Labels) or the bulk script in repo-structure.md
+# Free tier: labels with "::" naming are NOT mutually exclusive at the UI level (scoped labels are Premium).
+# The agent enforces single-active-status discipline at read/write time.
+
+labels:
+
+  # ── Kind ─────────────────────────────────────────────────────────────
+  # Distinguishes parent Working Items from child Tasks on the board.
+  - name: "Kind: Working Item"
+    color: "#0052CC"
+    description: "Parent issue representing a deliverable"
+
+  - name: "Kind: Task"
+    color: "#0052CC"
+    description: "Atomic unit of work, child of a Working Item"
+
+  # ── Status (Working Items & Tasks) ───────────────────────────────────
+  # Only ONE Status label should be active per issue at any time.
+  # The agent replaces the old Status label on every write — never adds a second one.
+  # Working Item status is DERIVED from child Tasks per §5. Never set directly.
+  - name: "Status: Todo"
+    color: "#dfe1e6"
+    description: "Not yet started"
+
+  - name: "Status: Ready to Start"
+    color: "#b3d4ff"
+    description: "Ready, not yet picked up"
+
+  - name: "Status: Working on it"
+    color: "#0747a6"
+    description: "Actively in progress"
+
+  - name: "Status: Ready to Review"
+    color: "#ff991f"
+    description: "Dev done, waiting for review"
+
+  - name: "Status: In Review"
+    color: "#ff991f"
+    description: "Review in progress"
+
+  - name: "Status: Done"
+    color: "#00875a"
+    description: "Completed and verified"
+
+  - name: "Status: Stuck"
+    color: "#de350b"
+    description: "Blocked, needs attention"
+
+  - name: "Status: Declined"
+    color: "#6554c0"
+    description: "Rejected or cancelled"
+
+  - name: "Status: Deployment"
+    color: "#403294"
+    description: "In deployment process"
+
+  # ── Priority ─────────────────────────────────────────────────────────
+  - name: "Priority: High"
+    color: "#de350b"
+    description: ""
+
+  - name: "Priority: Medium"
+    color: "#ff991f"
+    description: ""
+
+  - name: "Priority: Low"
+    color: "#00875a"
+    description: ""
+
+  - name: "Priority: Un-priority"
+    color: "#dfe1e6"
+    description: ""
+
+  # ── Type ─────────────────────────────────────────────────────────────
+  - name: "Type: Feature"
+    color: "#0052CC"
+    description: ""
+
+  - name: "Type: BUG"
+    color: "#de350b"
+    description: ""
+
+  - name: "Type: Support"
+    color: "#00875a"
+    description: ""
+
+  - name: "Type: CR"
+    color: "#ff991f"
+    description: "Change Request"
+
+  - name: "Type: Issue"
+    color: "#6554c0"
+    description: ""
+
+  - name: "Type: Deployment"
+    color: "#403294"
+    description: ""
+
+  # ── Platform ─────────────────────────────────────────────────────────
+  - name: "Platform: Kub Wallet"
+    color: "#00b8d9"
+    description: ""
+
+  - name: "Platform: iOS"
+    color: "#00b8d9"
+    description: ""
+
+  - name: "Platform: Android"
+    color: "#00b8d9"
+    description: ""
+
+  - name: "Platform: Web"
+    color: "#00b8d9"
+    description: ""
+
+  - name: "Platform: Mobile App"
+    color: "#00b8d9"
+    description: ""
+
+  - name: "Platform: Smart Contract"
+    color: "#00b8d9"
+    description: ""
+
+  - name: "Platform: Chain"
+    color: "#00b8d9"
+    description: ""
+
+  - name: "Platform: Backend"
+    color: "#00b8d9"
+    description: ""
+
+  # ── Group ─────────────────────────────────────────────────────────────
+  # Maps to the board group structure in §3.
+  - name: "Group: Client"
+    color: "#4c9aff"
+    description: "Frontend / Mobile UI"
+
+  - name: "Group: Service"
+    color: "#4c9aff"
+    description: "Backend / API"
+
+  - name: "Group: Smart Contract"
+    color: "#4c9aff"
+    description: "On-chain logic"
+
+  - name: "Group: Chain"
+    color: "#4c9aff"
+    description: "Blockchain infra"
+
+  - name: "Group: QA - API Test"
+    color: "#4c9aff"
+    description: ""
+
+  - name: "Group: QA - Automate Test"
+    color: "#4c9aff"
+    description: ""
+
+  - name: "Group: Defects"
+    color: "#de350b"
+    description: ""
+
+  # ── Dev Status (Defects only) ─────────────────────────────────────────
+  # Used INSTEAD of Status::* labels on Defect issues (§4, §11).
+  # Do NOT apply Status::* labels to Defect issues.
+  - name: "Dev Status: Todo"
+    color: "#dfe1e6"
+    description: "Defect: dev hasn't picked up"
+
+  - name: "Dev Status: Working on it"
+    color: "#0747a6"
+    description: "Defect: dev fixing"
+
+  - name: "Dev Status: Ready for QA"
+    color: "#ff991f"
+    description: "Defect: dev done, QA verifying"
+
+  - name: "Dev Status: Done"
+    color: "#00875a"
+    description: "Defect: verified fixed"
+
+  # ── QA Status (Defects only) ──────────────────────────────────────────
+  - name: "QA Status: Pending Retest"
+    color: "#dfe1e6"
+    description: "Defect: awaiting QA retest"
+
+  - name: "QA Status: In Retest"
+    color: "#ff991f"
+    description: "Defect: QA retesting"
+
+  - name: "QA Status: Pass"
+    color: "#00875a"
+    description: "Defect: fix verified"
+
+  - name: "QA Status: Fail"
+    color: "#de350b"
+    description: "Defect: fix failed, returned to dev"
