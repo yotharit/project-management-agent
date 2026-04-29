@@ -38,31 +38,16 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
 
 ## 2. Install the Plugin
 
-This repo is a **plugin marketplace**. Installation is a two-step process.
+Skills are bundled directly in your PM docs repo and installed automatically by `setup.sh` — no plugin marketplace required.
 
-**Step 1 — Add the marketplace** (once per machine):
+Run `setup.sh` from your PM docs repo root (see [§3](#3-one-time-gitlab-setup) and [ONBOARDING.md](./ONBOARDING.md) for full steps). The script copies all skills into `.claude/skills/` and includes them in the initial commit. Anyone who clones the repo gets the skills automatically — no extra install step.
 
-```bash
-/plugin marketplace add https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
-```
-
-**Step 2 — Install the plugin** (project scope):
-
-```bash
-/plugin install kub-wallet-pm@bitkub-pm-skills
-```
-
-To install globally (available in all projects on this machine):
-
-```bash
-/plugin install --scope user kub-wallet-pm@bitkub-pm-skills
-```
-
-Verify installation — in Claude Code, type `/help` and confirm these slash commands appear:
+Verify: open Claude Code in the PM docs repo and type `/help`. You should see:
 - `/pm-prd`
 - `/pm-standup`
 - `/pm-bug`
 - `/pm-breakdown`
+- `/pm-cr`
 
 > **Note:** The `pm-agent` skill is model-invoked (auto-triggered) — it does not appear as a slash command.
 
@@ -96,7 +81,7 @@ Copy from this plugin repo into your GitLab repo:
 ```bash
 cp gitlab/templates/issue/*.md      .gitlab/issue_templates/
 cp gitlab/templates/merge_request/*.md  .gitlab/merge_request_templates/
-git add .gitlab/ && git commit -m "Add PM issue and MR templates"
+git add .gitlab/ .claude/ && git commit -m "Add PM issue and MR templates"
 git push
 ```
 

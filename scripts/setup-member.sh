@@ -143,8 +143,28 @@ YAML
 fi
 echo ""
 
-# ── Step 4: Write .env ────────────────────────────────────────────────────
-info "Step 4 — Personal .env"
+# ── Step 4: Claude Code skills ────────────────────────────────────────────
+info "Step 4 — Claude Code skills"
+echo ""
+SKILLS_DST="$TARGET_DIR/.claude/skills"
+if [[ -d "$SKILLS_DST" ]]; then
+  skill_count=$(ls "$SKILLS_DST" | wc -l | tr -d ' ')
+  skip "Already present ($skill_count skills in .claude/skills/)"
+else
+  mkdir -p "$SKILLS_DST"
+  for skill_src in "$PLUGIN_DIR/skills"/*/; do
+    skill_name=$(basename "$skill_src")
+    cp -r "$skill_src" "$SKILLS_DST/$skill_name"
+    ok "Copied: .claude/skills/$skill_name/"
+  done
+  echo ""
+  echo -e "  ${YELLOW}Remember to commit and push .claude/skills/:${NC}"
+  echo "  git add .claude/ && git commit -m 'Add PM agent skills' && git push"
+fi
+echo ""
+
+# ── Step 5: Write .env ────────────────────────────────────────────────────
+info "Step 5 — Personal .env"
 echo ""
 ENV_FILE="$TARGET_DIR/.env"
 if [[ -f "$ENV_FILE" ]]; then

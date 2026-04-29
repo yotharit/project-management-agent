@@ -32,17 +32,15 @@ The scripts detect new vs ongoing automatically, are idempotent (safe to re-run)
 ## Table of Contents
 
 - [Path A — New Project](#path-a--new-project)
-  - [Step 1: Install the plugin](#step-1-install-the-plugin)
-  - [Step 2: Run setup.sh](#step-2-run-setupsh)
-  - [Step 3: Complete GitLab UI steps](#step-3-complete-gitlab-ui-steps)
-  - [Step 4: Each team member runs setup-member.sh](#step-4-each-team-member-runs-setup-membersh)
-  - [Step 5: Verify and start your first feature](#step-5-verify-and-start-your-first-feature)
-- [Path B — Ongoing Project](#path-b--ongoing-project)
-  - [Step 1: Install the plugin](#step-1-install-the-plugin-1)
-  - [Step 2: Run setup.sh (ongoing mode auto-detected)](#step-2-run-setupsh-ongoing-mode-auto-detected)
+  - [Step 1: Run setup.sh](#step-1-run-setupsh)
+  - [Step 2: Complete GitLab UI steps](#step-2-complete-gitlab-ui-steps)
   - [Step 3: Each team member runs setup-member.sh](#step-3-each-team-member-runs-setup-membersh)
-  - [Step 4: Migrate existing board data (optional)](#step-4-migrate-existing-board-data-optional)
-  - [Step 5: Validate and start daily standup](#step-5-validate-and-start-daily-standup)
+  - [Step 4: Verify and start your first feature](#step-4-verify-and-start-your-first-feature)
+- [Path B — Ongoing Project](#path-b--ongoing-project)
+  - [Step 1: Run setup.sh (ongoing mode auto-detected)](#step-1-run-setupsh-ongoing-mode-auto-detected)
+  - [Step 2: Each team member runs setup-member.sh](#step-2-each-team-member-runs-setup-membersh)
+  - [Step 3: Migrate existing board data (optional)](#step-3-migrate-existing-board-data-optional)
+  - [Step 4: Validate and start daily standup](#step-4-validate-and-start-daily-standup)
 - [Adding a new team member (both paths)](#adding-a-new-team-member-both-paths)
 - [Updating a role](#updating-a-role)
 - [Troubleshooting](#troubleshooting)
@@ -55,29 +53,7 @@ Use this path when you are starting a brand-new project with no existing board o
 
 ---
 
-### Step 1: Install the plugin
-
-Run once per machine:
-
-```bash
-# Add the marketplace (once per machine)
-/plugin marketplace add https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
-
-# Install the plugin (project scope)
-/plugin install kub-wallet-pm@bitkub-pm-skills
-```
-
-To install globally (all projects on this machine):
-
-```bash
-/plugin install --scope user kub-wallet-pm@bitkub-pm-skills
-```
-
-Verify: open Claude Code and type `/help`. You should see `/pm-prd`, `/pm-standup`, `/pm-bug`, `/pm-breakdown`, `/pm-cr` listed.
-
----
-
-### Step 2: Run setup.sh
+### Step 1: Run setup.sh
 
 Create and `cd` into your PM docs repo (e.g. `kub-wallet-pm`), then run:
 
@@ -93,6 +69,7 @@ It will automatically:
 - Create all required folders (`rfc/`, `grooming/`, `kickoff/`, `prd/`, `breakdown/`, `cr/`, `daily-standup/`)
 - Copy issue and MR templates into `.gitlab/`
 - Create all 38 GitLab labels (skips any that already exist)
+- Copy all PM skills into `.claude/skills/` (so every team member gets them on clone)
 - Create `team.yaml` with you as the first member
 - Create your personal `.env`
 - Add `.env` to `.gitignore`
@@ -100,14 +77,14 @@ It will automatically:
 When the script finishes, commit and push:
 
 ```bash
-git add team.yaml .gitignore .gitlab/
+git add team.yaml .gitignore .gitlab/ .claude/
 git commit -m "Init PM agent setup"
 git push
 ```
 
 ---
 
-### Step 3: Complete GitLab UI steps
+### Step 2: Complete GitLab UI steps
 
 These three steps require the GitLab web UI (not available via API on Free tier):
 
@@ -130,7 +107,7 @@ Create a second board named `Defects` filtered on `Group: Defects`.
 
 ---
 
-### Step 4: Each team member runs setup-member.sh
+### Step 3: Each team member runs setup-member.sh
 
 Share this command with every team member. Each person runs it **once on their own machine** from the PM docs repo root:
 
@@ -142,11 +119,12 @@ The script:
 1. Prompts for their GitLab credentials
 2. Verifies their token and confirms the username matches
 3. Checks if they're in `team.yaml` — if not, adds them and prompts to commit
-4. Writes their personal `.env`
+4. Ensures `.claude/skills/` is present — copies skills if missing (e.g. for members onboarding before the initial commit landed)
+5. Writes their personal `.env`
 
 ---
 
-### Step 5: Verify and start your first feature
+### Step 4: Verify and start your first feature
 
 Open Claude Code in the PM docs repo and run:
 
@@ -178,18 +156,7 @@ Use this path when your project already has a GitLab board, existing issues, and
 
 ---
 
-### Step 1: Install the plugin
-
-Same as Path A Step 1.
-
-```bash
-/plugin marketplace add https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
-/plugin install kub-wallet-pm@bitkub-pm-skills
-```
-
----
-
-### Step 2: Run setup.sh (ongoing mode auto-detected)
+### Step 1: Run setup.sh (ongoing mode auto-detected)
 
 From your PM docs repo root (or create one if you have a separate docs repo):
 
@@ -202,6 +169,7 @@ The script detects that `team.yaml` or `prd/` already exists and runs in **ongoi
 - Create any missing folders (`rfc/`, `grooming/`, etc.) — skips existing ones
 - Copy any missing `.gitlab/` templates — skips existing ones
 - Create any missing GitLab labels — skips labels that already exist
+- Copy all PM skills into `.claude/skills/` — skips skills that already exist
 - Add you as the first member in `team.yaml` (if it doesn't exist yet), or append you to an existing one
 - Create your `.env` if it doesn't exist
 
@@ -216,16 +184,16 @@ curl -s "https://<host>/api/v4/projects/<id>/issues?state=opened&per_page=100" \
 Commit and push:
 
 ```bash
-git add team.yaml .gitignore .gitlab/
+git add team.yaml .gitignore .gitlab/ .claude/
 git commit -m "Add PM agent setup to project"
 git push
 ```
 
 ---
 
-### Step 3: Each team member runs setup-member.sh
+### Step 2: Each team member runs setup-member.sh
 
-Same as Path A Step 4 — each person runs:
+Same as Path A Step 3 — each person runs:
 
 ```bash
 /path/to/bitkub-pm-skills/scripts/setup-member.sh
@@ -235,7 +203,7 @@ The script handles self-registration into `team.yaml` automatically if they're n
 
 ---
 
-### Step 4: Migrate existing board data (optional)
+### Step 3: Migrate existing board data (optional)
 
 If you have existing Working Items and Tasks in a monday.com XLSX export, the agent can migrate them to GitLab Issues in one pass.
 
@@ -259,7 +227,7 @@ After confirming, review 5–10 issues in GitLab to verify labels, milestones, a
 
 ---
 
-### Step 5: Validate and start daily standup
+### Step 4: Validate and start daily standup
 
 Ask the agent to validate the board state:
 
@@ -346,3 +314,4 @@ git push
 | WI status looks wrong on the board | GitLab Free doesn't compute status automatically | Ask the agent: "Recompute WI statuses" — it will re-read all child Tasks and correct the labels. |
 | Breakdown fails: "PRD not approved" | The PRD `status` field is still `draft` | Run `/pm-prd <feature>` and say "PRD approved" to lock it before running breakdown. |
 | CR Path A: PRD didn't version-bump | The approved PRD was edited directly instead of via the agent | Always use `/pm-cr` or `/pm-prd` for post-approval changes. Direct edits skip versioning. |
+| `/pm-standup` (or other `/pm-*`) not in `/help` | `.claude/skills/` missing from the PM docs repo | Run `setup-member.sh` — it will copy the skills. Or `git pull` if the PM lead already committed them. |

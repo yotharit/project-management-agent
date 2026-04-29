@@ -249,8 +249,24 @@ else
 fi
 echo ""
 
-# ── Step 8: Personal .env ─────────────────────────────────────────────────
-info "Step 8 — Your personal .env"
+# ── Step 8: Claude Code skills ────────────────────────────────────────────
+info "Step 8 — Claude Code skills"
+echo ""
+SKILLS_DST="$TARGET_DIR/.claude/skills"
+mkdir -p "$SKILLS_DST"
+for skill_src in "$PLUGIN_DIR/skills"/*/; do
+  skill_name=$(basename "$skill_src")
+  if [[ -d "$SKILLS_DST/$skill_name" ]]; then
+    skip "Exists: .claude/skills/$skill_name/"
+  else
+    cp -r "$skill_src" "$SKILLS_DST/$skill_name"
+    ok "Copied: .claude/skills/$skill_name/"
+  fi
+done
+echo ""
+
+# ── Step 9: Personal .env ─────────────────────────────────────────────────
+info "Step 9 — Your personal .env"
 echo ""
 ENV_FILE="$TARGET_DIR/.env"
 if [[ -f "$ENV_FILE" ]]; then
@@ -274,7 +290,7 @@ echo ""
 echo "Next steps:"
 echo ""
 echo "  1. Review and commit:"
-echo "     git add team.yaml .gitignore .gitlab/"
+echo "     git add team.yaml .gitignore .gitlab/ .claude/"
 echo "     git commit -m 'Init PM agent setup'"
 echo "     git push"
 echo ""
