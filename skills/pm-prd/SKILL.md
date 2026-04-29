@@ -2,8 +2,8 @@
 name: pm-prd
 description: Generate, revise, or approve a PRD for a software feature from RFC, grooming, and kickoff source documents
 argument-hint: <feature-slug>
-allowed-tools: [Read, Write, Edit, Glob]
-version: 1.0.0
+allowed-tools: [Read, Write, Edit, Glob, Bash]
+version: 1.1.0
 ---
 
 # PM — PRD Pipeline
@@ -20,6 +20,50 @@ Feature: $ARGUMENTS
 4. **Language preservation.** Thai/English/mixed source content is verbatim. Agent commentary in English.
 5. **Pipeline gates.** Sources → PRD → Review → Breakdown. Never skip. Never auto-promote.
 6. **PRD versioning.** Every change bumps version + adds Changelog row. Approved PRDs are not silently regenerated.
+
+---
+
+## Gitflow Management
+
+All PRD file writes go through a feature branch → MR → `develop`. QA tests PM artifacts on `develop`. The `develop` → `main` merge is a separate PM gate — the agent never triggers it.
+
+**Confirm with user before every `push` and MR creation.**
+
+### Branch setup — run once per session, before first write
+```bash
+git status                               # must be clean
+git checkout develop && git pull origin develop
+git checkout -b prd/<feature-slug>       # if exists: git checkout prd/<feature-slug>
+```
+
+### After every file write (new draft or revision)
+```bash
+git add prd/<feature-slug>.md
+git commit -m "prd(<feature-slug>): <draft|revise> v<version> — <brief change>"
+git push origin prd/<feature-slug>
+```
+
+### On first push — create GitLab MR targeting `develop` (confirm first)
+```
+POST /projects/:id/merge_requests
+{
+  "source_branch": "prd/<feature-slug>",
+  "target_branch": "develop",
+  "title": "PRD: <Feature Name> — v<version> review",
+  "description": "File: `prd/<feature-slug>.md`\nVersion: <version>\nFeature Owner: @<owner>\n\nReview using `.gitlab/merge_request_templates/prd-review.md`.",
+  "remove_source_branch": true
+}
+```
+Report MR URL to user.
+
+### On PRD approval (version 1.0, status approved)
+```bash
+git add prd/<feature-slug>.md
+git commit -m "prd(<feature-slug>): approve v1.0"
+git push origin prd/<feature-slug>
+```
+Remind user: "PRD v1.0 pushed to branch. Merge the MR into `develop` so QA can validate. After QA sign-off, `develop` → `main` locks the PRD."
+**Do NOT merge the MR yourself** — merge is the team's explicit approval gate.
 
 ---
 

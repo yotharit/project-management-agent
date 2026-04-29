@@ -2,8 +2,8 @@
 name: pm-breakdown
 description: Break down an approved PRD into Working Items (GitLab Issues) grouped by component — Client, Service, Smart Contract, Chain, QA
 argument-hint: <feature-slug>
-allowed-tools: [Read, Write, Edit, Glob]
-version: 1.0.0
+allowed-tools: [Read, Write, Edit, Glob, Bash]
+version: 1.1.0
 ---
 
 # PM — Breakdown Pipeline
@@ -20,6 +20,56 @@ Feature: $ARGUMENTS
 4. **Language preservation.** Thai/English/mixed content verbatim.
 5. **Pipeline gates.** PRD must be approved before breakdown starts. YAML must be approved before issues are created.
 6. **WI status is a rollup.** New Working Items start as `Status: Todo`. Never set status directly — it derives from children.
+
+---
+
+## Gitflow Management
+
+All breakdown file writes go through a feature branch → MR → `develop`. QA tests on `develop`. The `develop` → `main` merge is a separate PM gate — the agent never triggers it.
+
+**Confirm with user before every `push` and MR creation.**
+
+### Branch setup — run once per session, before first write
+```bash
+git status
+git checkout develop && git pull origin develop
+git checkout -b breakdown/<feature-slug>     # if exists: git checkout breakdown/<feature-slug>
+```
+
+### After writing breakdown YAML draft (Stage 3)
+```bash
+git add breakdown/<feature-slug>_v0.1.yaml
+git commit -m "breakdown(<feature-slug>): draft v0.1 — propose working items"
+git push origin breakdown/<feature-slug>
+```
+
+### After YAML revisions during review
+```bash
+git add breakdown/<feature-slug>_v<N>.yaml
+git commit -m "breakdown(<feature-slug>): revise v<N> — <brief change>"
+git push origin breakdown/<feature-slug>
+```
+
+### After YAML approval and archiving (Stage 4, before creating issues)
+```bash
+git add breakdown/<feature-slug>_v1.0.yaml
+git commit -m "breakdown(<feature-slug>): approve v1.0 — apply to GitLab issues"
+git push origin breakdown/<feature-slug>
+```
+
+### After all GitLab issues are created — create MR (confirm first)
+```
+POST /projects/:id/merge_requests
+{
+  "source_branch": "breakdown/<feature-slug>",
+  "target_branch": "develop",
+  "title": "Breakdown: <Feature Name> — v1.0 applied",
+  "description": "Working Items created in GitLab.\nYAML archived: `breakdown/<feature-slug>_v1.0.yaml`",
+  "remove_source_branch": true
+}
+```
+Report MR URL. Remind user: "Merge into `develop` so QA can validate the issue set. After sign-off, `develop` → `main` archives the breakdown."
+**Do NOT merge the MR yourself.**
 
 ---
 

@@ -22,6 +22,7 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
    - [/pm-cr — Change Request](#pm-cr--change-request)
 6. [Folder Structure](#6-folder-structure)
 7. [Workflow Overview](#7-workflow-overview)
+8. [Gitflow Model](#8-gitflow-model)
 
 ---
 
@@ -196,6 +197,18 @@ You do not need a slash command for general PM conversations. The `pm-agent` ski
 
 The agent reads from GitLab, applies the status rollup rules, and responds with accurate board state.
 
+**Pick up a task (agent handles Gitflow suggestion automatically):**
+```
+"I'm picking up issue #42"
+"Assign me to #42"
+```
+The agent:
+1. Fetches live issue status from GitLab — warns if already picked up or closed
+2. Updates labels: `Status: Working on it` + assignee
+3. Posts a comment on the issue with:
+   - **Branch name** ready to use: `feature/42-implement-wallet-progress-bar`
+   - **Claude Code prompt** — pre-filled with task name, PRD reference, platform, description
+
 ---
 
 ### /pm-prd — PRD Pipeline
@@ -223,6 +236,8 @@ The agent bumps the version (`0.1 → 0.2`) and adds a Changelog row.
 Sets `version: 1.0`, `status: approved`. PRD is now locked — no silent regeneration.
 
 **Expected output:** `prd/transaction-limit.md` with frontmatter, Changelog table, FRs with citations, ACs, and Source Coverage appendix.
+
+**Gitflow:** `prd/<feature>` → commit → push → MR → **`develop`** (QA validates) → MR → **`main`** (PM gate)
 
 ---
 
@@ -254,6 +269,8 @@ The agent:
 
 **Dev/QA create Tasks** (child issues) under each Working Item after import — the agent does not create Tasks at this stage.
 
+**Gitflow:** `breakdown/<feature>` → commit → push → MR → **`develop`** (QA validates issue set) → MR → **`main`** (PM gate)
+
 ---
 
 ### /pm-standup — Daily Standup
@@ -284,10 +301,14 @@ standup:
 ```
 
 Fill it in, confirm, and the agent:
+- **Fetches live issue status** from GitLab before each update — warns if status has drifted from what you entered
 - Updates the `Status:*` label on each task in GitLab
 - Posts a standup note on each issue
+- **First pick-up detection:** if task moves from `Todo`/`Ready to Start` → `Working on it`, also posts branch name + Claude Code prompt on the issue
 - Recomputes the parent Working Item status
 - Appends your section to `daily-standup/2026-04-29.md`
+
+**Gitflow:** `standup/<YYYY-MM-DD>` → commit → push → MR → **`develop`** → MR → **`main`** (PM gate)
 
 #### Mode B — Generate team report (PM / Scrum Master)
 
@@ -361,6 +382,8 @@ Issue is closed. Labels: `Dev Status: Done`, `QA Status: Pass`.
 ```
 Returns to dev. Failure notes appended to issue. Labels: `Dev Status: Todo`, `QA Status: Fail`.
 
+**Gitflow:** Defect CRUD is API-only — no file commits needed. Exception: `team.yaml` self-registration → `chore/team-register-<username>` → MR → **`develop`**
+
 ---
 
 ### /pm-cr — Change Request
@@ -393,6 +416,8 @@ The agent reads the affected PRD, identifies which sections/FRs are impacted, de
 *Path A: PRD change required* — agent revises the PRD (bumps to `v1.1`), cites each change as `[CR-transaction-limit-001 2026-04-29]`, presents diff for approval, then triggers `/pm-breakdown` for any new Working Items.
 
 *Path B: New items only, no PRD change* — agent creates GitLab Issues directly with `Type: CR` label, linking back to the CR YAML.
+
+**Gitflow:** `cr/<feature>-<NNN>` → commit each stage → push → MR → **`develop`** (QA validates) → MR → **`main`** (PM gate). Path A also commits PRD changes on the same branch.
 
 **Quick reference — CR vs other types:**
 
@@ -449,35 +474,40 @@ kub-wallet-pm/
 ## 7. Workflow Overview
 
 ```
-                    ┌─────────────┐
-  Dev team ────────▶│  RFC (.md)  │
-  PM/PO ───────────▶│  Grooming   │  (manual, read-only)
-  PO ──────────────▶│  Kickoff    │
+  Dev team ────────▶┌─────────────┐
+  PM/PO ───────────▶│  RFC (.md)  │
+  PO ──────────────▶│  Grooming   │  (manual, read-only)
+                    │  Kickoff    │
                     └──────┬──────┘
                            │ /pm-prd <feature>
+                           │ branch: prd/<feature>
                     ┌──────▼──────┐
                     │  PRD draft  │  prd/<feature>.md v0.x
-                    │   (review   │  ← MR on GitLab
-                    │  via MR)    │
+                    │   v0.x      │  commit → push → MR → develop
                     └──────┬──────┘
-                           │ "PRD approved"
+                           │ QA validates on develop
+                           │ "PRD approved" → merge MR
                     ┌──────▼──────┐
-                    │ PRD v1.0    │  locked, status: approved
+                    │ PRD v1.0    │  locked — develop → main (PM gate)
                     └──────┬──────┘
                            │ /pm-breakdown <feature>
+                           │ branch: breakdown/<feature>
                     ┌──────▼──────┐
                     │  Breakdown  │  breakdown/<feature>_v0.1.yaml
-                    │   YAML      │  ← review inline
+                    │   YAML      │  commit → push → MR → develop
                     └──────┬──────┘
-                           │ "Apply breakdown"
+                           │ "Apply breakdown" — GitLab Issues created
+                           │ QA validates issue set on develop
                     ┌──────▼──────┐
-                    │  GitLab     │  Working Item issues created
-                    │  Issues     │  with labels + milestone
+                    │  GitLab     │  Working Items with labels + milestone
+                    │  Issues     │  develop → main (PM gate)
                     └──────┬──────┘
-                           │ Dev/QA create child Task issues
+                           │ Dev picks up task (via pm-agent / pm-standup)
+                           │ Agent posts: branch feature/<iid>-<slug>
+                           │             + Claude Code prompt on issue
                     ┌──────▼──────┐
                     │  Daily      │  /pm-standup — Mode A/B/C
-                    │  Standup    │  status labels updated via API
+                    │  Standup    │  branch: standup/<date> → MR → develop
                     └─────────────┘
 ```
 
@@ -485,17 +515,91 @@ kub-wallet-pm/
 ```
 Stakeholder request
        │ /pm-cr <feature>
+       │ branch: cr/<feature>-001
 ┌──────▼──────┐
-│  CR YAML    │  cr/<feature>-001.yaml — Log + Impact Assessment
+│  CR YAML    │  cr/<feature>-001.yaml
+│  Log +      │  commit each stage → push
+│  Assessment │
 └──────┬──────┘
        │ "Approve CR"
-       ├─── prd_change_needed: true ──▶ /pm-prd (revise v1.1) ──▶ /pm-breakdown
+       ├─── prd_change_needed: true ──▶ revise PRD v1.1 (same branch) ──▶ /pm-breakdown
        └─── prd_change_needed: false ─▶ GitLab Issues (Type: CR)
+       │
+       └── MR → develop (QA validates) → main (PM gate)
 ```
 
 **Hard rules that always apply (regardless of skill):**
 - Never fabricate — every value traces to a source document
-- Confirm before writing — always show proposed changes first
+- Confirm before writing, pushing, or creating MRs
 - WI status is a rollup — derived from child Tasks, never set directly
 - `Ready to Review → Done` requires explicit user approval
 - PRD pipeline gates are never skipped
+- Agent never merges MRs or creates `develop` → `main` MR
+
+---
+
+## 8. Gitflow Model
+
+All PM artifact writes follow a **branch-per-artifact → MR → `develop` → MR → `main`** model.
+
+### Branch responsibilities
+
+| Who | Branch | Target | Gate |
+|---|---|---|---|
+| Agent | `prd/<feature>` | `develop` | Team reviews MR |
+| Agent | `breakdown/<feature>` | `develop` | Team reviews MR |
+| Agent | `cr/<feature>-<NNN>` | `develop` | Team reviews MR |
+| Agent | `standup/<YYYY-MM-DD>` | `develop` | Team reviews MR |
+| Agent | `chore/team-register-<username>` | `develop` | Team reviews MR |
+| PM/PO | `develop` | `main` | QA sign-off complete |
+| Dev | `feature/<iid>-<slug>` | (code repo) | Per code repo policy |
+
+### Step-by-step for every artifact
+
+```
+1. git checkout develop && git pull origin develop
+2. git checkout -b <branch-name>
+3. [write / edit file]
+4. git add <file> && git commit -m "<conventional message>"
+5. git push origin <branch-name>
+6. POST /projects/:id/merge_requests  (source → develop)
+   → report MR URL to user
+7. Team reviews and merges MR into develop
+8. QA tests PM artifacts on develop  ← Dev Release
+9. PM/PO opens develop → main MR when QA signs off
+```
+
+### Commit message conventions
+
+| Skill | Format | Example |
+|---|---|---|
+| pm-prd | `prd(<slug>): <draft\|revise\|approve> v<N>` | `prd(tx-limit): draft v0.1 — initial` |
+| pm-breakdown | `breakdown(<slug>): <draft\|revise\|approve> v<N>` | `breakdown(tx-limit): approve v1.0` |
+| pm-cr | `cr(<slug>-<NNN>): <log\|impact\|approve\|apply>` | `cr(tx-limit-001): apply — revise PRD v1.1` |
+| pm-standup | `standup: <YYYY-MM-DD> — <username>` | `standup: 2026-04-29 — yo.tharit` |
+| team.yaml | `chore(team): register <display_name>` | `chore(team): register Yo Tharit` |
+
+### Task pick-up (code repo branch — suggested by agent, not created)
+
+When a developer picks up a task, the agent posts on the GitLab issue:
+
+```
+Branch:  feature/42-implement-wallet-progress-bar
+
+Claude Code prompt:
+  Implement "Implement daily limit Progress Bar" (Task #42, Working Item #15).
+  Context:
+  - PRD: prd/transaction-limit.md §6.1
+  - Platform: Mobile App | Priority: High
+  Description: <task description>
+  Start by reading the PRD section above, then implement.
+```
+
+The developer creates `feature/<iid>-<slug>` in the **code repository** per the code repo's own branching policy. The agent does not create this branch.
+
+### Hard constraints
+
+- Agent confirms with user before every `push` and MR creation
+- Agent never pushes directly to `develop` or `main`
+- Agent never merges any MR
+- Agent never creates the `develop` → `main` MR — that is the PM/PO gate action after QA sign-off

@@ -159,7 +159,8 @@ Full label list: `gitlab/labels.yaml`. API reference: `gitlab/api-integration.md
 | "Update my standup" / "Log progress" | Standup Mode A — or invoke `/pm-standup` |
 | "Generate today's standup" / "Daily report" | Standup Mode B — or invoke `/pm-standup` |
 | "What's <person> working on?" / "Status of <feature>?" | Standup Mode C — quick query |
-| "Assign me to #42" | Task assignment workflow |
+| "Assign me to #42" | Task pick-up workflow (see §6b) |
+| "I'm picking up #42" / "Start working on #42" | Task pick-up workflow (see §6b) |
 | "Open a bug: <description>" | Defect workflow — or invoke `/pm-bug` |
 | "Defect #42 ready for QA" | Defect: Dev → Ready for QA, QA → In Retest |
 | "Log a CR for <feature>" / "Stakeholder wants to change <X>" | CR Stage 1 — or invoke `/pm-cr <feature>` |
@@ -167,6 +168,69 @@ Full label list: `gitlab/labels.yaml`. API reference: `gitlab/api-integration.md
 | "Approve CR-<id>" / "Reject CR-<id>" | CR Stage 3 — record decision |
 | "Apply CR-<id>" | CR Stage 4 — revise PRD (Path A) or create GitLab issues (Path B) |
 | "Migrate this XLSX" | XLSX migration (one-time) |
+
+---
+
+## 6b. Task Pick-up Workflow
+
+**Trigger:** "Assign me to #42", "I'm picking up #42", "Start working on #42"
+
+### Step 1 — Fetch and verify issue status
+```
+GET /projects/:id/issues/:iid
+```
+Evaluate before proceeding:
+
+| Condition | Action |
+|---|---|
+| `state: closed` | Stop — issue is closed. Tell user. |
+| Label `Status: Done` or `Status: Declined` | Stop — already finished. Tell user. |
+| Label `Status: Working on it` + already assigned to someone else | Warn: "Already picked up by @<assignee>. Override?" — wait for confirmation. |
+| Label `Status: Working on it` + unassigned | Allow — assign and continue. |
+| Any other open state | Allow — proceed. |
+
+Also read from issue: `Part of #<wi_iid>` (parent WI), platform label, priority label, PRD/source reference in description.
+
+### Step 2 — Update labels and assignee (confirm with user first)
+```
+PUT /projects/:id/issues/:iid
+{
+  "labels": "<replace Status:* → Status: Working on it>",
+  "assignee_ids": [<user_id>]
+}
+```
+
+### Step 3 — Generate branch name and Claude Code prompt
+
+**Branch name format:** `feature/<iid>-<title-slug>`
+- Slug: lowercase, spaces → `-`, strip special chars, max 50 chars
+- Example: `#42 Implement daily limit Progress Bar` → `feature/42-implement-daily-limit-progress-bar`
+
+**Claude Code prompt template:**
+```
+Implement "<task name>" (Task #<iid>, Working Item #<wi_iid>).
+
+Context:
+- PRD: <prd source reference from issue description, e.g. prd/transaction-limit.md §6.1>
+- Platform: <platform label>
+- Priority: <priority label>
+
+Description:
+<task description from issue body>
+
+Start by reading the PRD section above, then implement.
+```
+
+### Step 4 — Post comment on issue (confirm with user first)
+```
+POST /projects/:id/issues/:iid/notes
+{
+  "body": "**Picked up by @<username> — <YYYY-MM-DD>**\n\n**Branch:** `feature/<iid>-<title-slug>`\n\n**Suggested Claude Code prompt:**\n```\n<prompt text>\n```"
+}
+```
+
+### Step 5 — Recompute parent WI status
+Fetch all child tasks of `#<wi_iid>`. Apply WI rollup rules (§4). Update WI labels if status changed.
 
 ---
 
@@ -181,6 +245,37 @@ Full label list: `gitlab/labels.yaml`. API reference: `gitlab/api-integration.md
 | GitLab Issues | Current board state |
 
 Conflict resolution: Grooming/kickoff overrides RFC decisions. If unresolvable → flag in PRD §10 Open Items.
+
+---
+
+## 7b. Gitflow Model
+
+All PM artifact writes follow a **branch-per-artifact → MR → `develop` → MR → `main`** model.
+
+| Step | Who | Action |
+|---|---|---|
+| 1 | Agent | `git checkout develop && git pull` → `git checkout -b <branch>` |
+| 2 | Agent | Write file → `git add` → `git commit` → `git push` |
+| 3 | Agent | Create MR targeting **`develop`** (confirm with user first) |
+| 4 | Team | Review MR → merge into `develop` |
+| 5 | QA | Test / validate PM artifacts on `develop` (Dev Release) |
+| 6 | PM/PO | Open separate MR: `develop` → `main` to lock artifacts |
+
+**Branch naming per skill:**
+
+| Skill | Branch |
+|---|---|
+| `/pm-prd` | `prd/<feature-slug>` |
+| `/pm-breakdown` | `breakdown/<feature-slug>` |
+| `/pm-cr` | `cr/<feature-slug>-<NNN>` |
+| `/pm-standup` | `standup/<YYYY-MM-DD>` |
+| `/pm-bug` (team.yaml only) | `chore/team-register-<username>` |
+
+**Hard constraints (always apply):**
+- Confirm with user before every `push` and MR creation
+- Never push directly to `develop` or `main`
+- Never merge any MR yourself — merge is the team's gate action
+- The agent never creates the `develop` → `main` MR
 
 ---
 

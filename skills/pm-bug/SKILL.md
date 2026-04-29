@@ -2,13 +2,45 @@
 name: pm-bug
 description: Open, update, or close a defect — QA opens bugs, dev picks up and fixes, QA retests
 argument-hint: [defect-title or issue-id]
-allowed-tools: [Read, Write, Edit]
-version: 1.0.0
+allowed-tools: [Read, Write, Edit, Bash]
+version: 1.1.0
 ---
 
 # PM — Defect Workflow
 
 $ARGUMENTS
+
+---
+
+## Gitflow Management
+
+Defect workflow runs entirely via GitLab Issues API — no markdown files are written in the normal flow, so no git operations are needed for defect CRUD.
+
+**Exception: `team.yaml` self-registration**
+
+When a new member is registered, create a branch and MR. Confirm with user first.
+
+```bash
+git status
+git checkout develop && git pull origin develop
+git checkout -b chore/team-register-<gitlab_username>
+git add team.yaml
+git commit -m "chore(team): register <display_name>"
+git push origin chore/team-register-<gitlab_username>
+```
+
+Then create MR:
+```
+POST /projects/:id/merge_requests
+{
+  "source_branch": "chore/team-register-<gitlab_username>",
+  "target_branch": "develop",
+  "title": "chore(team): register <display_name>",
+  "description": "New team member self-registration via /pm-bug.",
+  "remove_source_branch": true
+}
+```
+Report MR URL. **Do NOT merge the MR yourself.**
 
 ---
 

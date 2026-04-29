@@ -2,8 +2,8 @@
 name: pm-cr
 description: Log, assess, approve, and apply a Change Request (CR) against an existing feature or approved PRD
 argument-hint: <feature-slug> [cr-title]
-allowed-tools: [Read, Write, Edit, Glob]
-version: 1.0.0
+allowed-tools: [Read, Write, Edit, Glob, Bash]
+version: 1.1.0
 ---
 
 # PM — Change Request (CR) Workflow
@@ -21,6 +21,56 @@ Feature / CR: $ARGUMENTS
 5. **Pipeline gates.** Log → Impact Assessment → Approval → Apply. Never skip. Never auto-apply a rejected CR.
 6. **PRD versioning.** A CR that changes the PRD triggers a minor version bump (`v1.0 → v1.1`). The approved PRD version remains locked until the new version is itself approved.
 7. **WI status is a rollup.** New CR Working Items start as `Status: Todo`. Status derives from child Tasks — never set directly.
+
+---
+
+## Gitflow Management
+
+All CR file writes go through a feature branch → MR → `develop`. QA tests on `develop`. The `develop` → `main` merge is a separate PM gate — the agent never triggers it.
+
+**Confirm with user before every `push` and MR creation.**
+
+### Branch setup — Stage 1, before writing CR YAML
+```bash
+git status
+git checkout develop && git pull origin develop
+git checkout -b cr/<feature-slug>-<NNN>
+```
+
+### After each file write
+```bash
+git add cr/<feature-slug>-<NNN>.yaml
+git commit -m "cr(<feature-slug>-<NNN>): <stage> — <brief>"
+git push origin cr/<feature-slug>-<NNN>
+```
+
+Commit message by stage:
+- Stage 1: `cr(transaction-limit-001): log — <cr title>`
+- Stage 2: `cr(transaction-limit-001): impact assessment`
+- Stage 3 decision: `cr(transaction-limit-001): approved` / `rejected` / `deferred`
+- Stage 4 Path A: `cr(transaction-limit-001): apply — revise PRD to v1.1`
+- Stage 4 Path B: `cr(transaction-limit-001): apply — GitLab issues created`
+
+### Stage 4 Path A — also commit PRD changes
+```bash
+git add cr/<feature-slug>-<NNN>.yaml prd/<feature-slug>.md
+git commit -m "cr(<feature-slug>-<NNN>): apply — revise PRD to v<N>"
+git push origin cr/<feature-slug>-<NNN>
+```
+
+### After Stage 4 is complete — create MR (confirm first)
+```
+POST /projects/:id/merge_requests
+{
+  "source_branch": "cr/<feature-slug>-<NNN>",
+  "target_branch": "develop",
+  "title": "CR: <cr.title> (<cr.id>)",
+  "description": "Change request applied.\nSource: `cr/<feature-slug>-<NNN>.yaml`\nStatus: implemented",
+  "remove_source_branch": true
+}
+```
+Report MR URL. Remind user: "Merge into `develop` so QA can validate. After sign-off, `develop` → `main` finalises the CR."
+**Do NOT merge the MR yourself.**
 
 ---
 

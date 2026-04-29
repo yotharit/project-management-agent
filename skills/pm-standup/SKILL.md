@@ -2,8 +2,8 @@
 name: pm-standup
 description: Run the daily standup — log individual progress, generate the team report, or query task status
 argument-hint: [username]
-allowed-tools: [Read, Write, Edit, Glob]
-version: 1.0.0
+allowed-tools: [Read, Write, Edit, Glob, Bash]
+version: 1.1.0
 ---
 
 # PM — Daily Standup
@@ -21,6 +21,48 @@ User: $ARGUMENTS (blank = resolve from `.env`)
 5. **Self-registration:** If user is not found in `team.yaml` → ask for `display_name` and `role`. Append the new entry to `team.yaml`, show the diff, confirm before writing.
 6. Role updates happen only on explicit command ("update my role to PO"). Never infer from behavior.
 7. Never repeat identity resolution in the same session.
+
+---
+
+## Gitflow Management
+
+Standup file writes go through a branch → MR → `develop`. Mode C (query only) writes nothing — no git operations needed.
+
+**Confirm with user before every `push` and MR creation.**
+
+### Branch setup — once per standup session, before writing
+```bash
+git status
+git checkout develop && git pull origin develop
+git checkout -b standup/<YYYY-MM-DD>
+```
+
+### After writing standup file (Mode A or B)
+```bash
+git add daily-standup/<YYYY-MM-DD>.md
+git commit -m "standup: <YYYY-MM-DD> — <username>"
+git push origin standup/<YYYY-MM-DD>
+```
+
+### If `team.yaml` was modified (self-registration) — commit on same branch
+```bash
+git add team.yaml daily-standup/<YYYY-MM-DD>.md
+git commit -m "standup: <YYYY-MM-DD> — <username> + register <display_name>"
+git push origin standup/<YYYY-MM-DD>
+```
+
+### Create MR (confirm first)
+```
+POST /projects/:id/merge_requests
+{
+  "source_branch": "standup/<YYYY-MM-DD>",
+  "target_branch": "develop",
+  "title": "Standup: <YYYY-MM-DD>",
+  "description": "Daily standup log for <YYYY-MM-DD>.",
+  "remove_source_branch": true
+}
+```
+Report MR URL. **Do NOT merge the MR yourself.**
 
 ---
 
@@ -99,7 +141,29 @@ standup:
   off_board_work: ""
 ```
 
-4. After user fills in: confirm changes → update each task label via API → post standup note → recompute parent WI status.
+4. After user fills in: confirm changes, then for each task in order:
+
+   **a. Verify current issue status before writing** (fetch once per task):
+   ```
+   GET /projects/:id/issues/:iid
+   ```
+   Confirm fetched `Status:*` label matches `current_status` in the YAML. If mismatched → warn user: "Issue #<iid> is currently `<actual>`, not `<yaml current_status>`. Proceed with update?"
+
+   **b. Update task label via API** — replace `Status:*` with `new_status` (skip if `new_status` is blank).
+
+   **c. Post standup note.**
+
+   **d. First pick-up detection** — if `current_status` ∈ {`Todo`, `Ready to Start`} AND `new_status` = `Working on it`, also post a branch + prompt comment (confirm with user first):
+   ```
+   POST /projects/:id/issues/:iid/notes
+   {
+     "body": "**Picked up by @<username> — <YYYY-MM-DD>**\n\n**Branch:** `feature/<iid>-<title-slug>`\n\n**Suggested Claude Code prompt:**\n```\nImplement \"<task name>\" (Task #<iid>, Working Item #<wi_iid>).\n\nContext:\n- PRD: <prd source reference from issue description>\n- Platform: <platform label>\n- Priority: <priority label>\n\nDescription:\n<task description from issue body>\n\nStart by reading the PRD section above, then implement.\n```"
+   }
+   ```
+   Branch slug: lowercase, spaces → `-`, strip special chars, max 50 chars.
+
+   **e. Recompute parent WI status** after all tasks are updated.
+
 5. Append user's section to `daily-standup/<date>.md`.
 6. Show all changes for confirmation **before** writing.
 
