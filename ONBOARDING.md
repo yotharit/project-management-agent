@@ -3,44 +3,29 @@
 > How to integrate the PM Agent skill set into your project.
 > Choose your path: **New Project** or **Ongoing Project**.
 
-## Quick start — use the scripts
-
-Two scripts handle the setup automatically. Manual steps are only needed for things the GitLab Free API doesn't expose (board columns, branch protection).
-
-| Script | Who runs it | When |
-|---|---|---|
-| `scripts/setup.sh` | PM / project lead | Once per project |
-| `scripts/setup-member.sh` | Each team member | Once per person per machine |
-
-```bash
-# PM/lead — from the PM docs repo root:
-/path/to/bitkub-pm-skills/scripts/setup.sh
-
-# Each team member — from the PM docs repo root:
-/path/to/bitkub-pm-skills/scripts/setup-member.sh
-```
-
-The scripts detect new vs ongoing automatically, are idempotent (safe to re-run), and verify your GitLab connection before doing anything.
-
-**After running the scripts, only 3 manual steps remain in GitLab UI:**
-1. Create Issue Board columns (Plan → Issue Boards)
-2. Create Milestones for known releases
-3. Protect the `main` branch (Settings → Repository)
-
----
-
 ## Table of Contents
 
 - [Path A — New Project](#path-a--new-project)
-  - [Step 1: Run setup.sh](#step-1-run-setupsh)
-  - [Step 2: Complete GitLab UI steps](#step-2-complete-gitlab-ui-steps)
-  - [Step 3: Each team member runs setup-member.sh](#step-3-each-team-member-runs-setup-membersh)
-  - [Step 4: Verify and start your first feature](#step-4-verify-and-start-your-first-feature)
+  - [Step 1: Create the PM docs repo and folder structure](#step-1-create-the-pm-docs-repo-and-folder-structure)
+  - [Step 2: Copy issue and MR templates](#step-2-copy-issue-and-mr-templates)
+  - [Step 3: Copy PM skills](#step-3-copy-pm-skills)
+  - [Step 4: Create all GitLab labels](#step-4-create-all-gitlab-labels)
+  - [Step 5: Create team.yaml](#step-5-create-teamyaml)
+  - [Step 6: Add .env to .gitignore](#step-6-add-env-to-gitignore)
+  - [Step 7: Commit and push](#step-7-commit-and-push)
+  - [Step 8: Complete GitLab UI steps](#step-8-complete-gitlab-ui-steps)
+  - [Step 9: Each team member sets up credentials](#step-9-each-team-member-sets-up-credentials)
+  - [Step 10: Verify and start your first feature](#step-10-verify-and-start-your-first-feature)
 - [Path B — Ongoing Project](#path-b--ongoing-project)
-  - [Step 1: Run setup.sh (ongoing mode auto-detected)](#step-1-run-setupsh-ongoing-mode-auto-detected)
-  - [Step 2: Each team member runs setup-member.sh](#step-2-each-team-member-runs-setup-membersh)
-  - [Step 3: Migrate existing board data (optional)](#step-3-migrate-existing-board-data-optional)
-  - [Step 4: Validate and start daily standup](#step-4-validate-and-start-daily-standup)
+  - [Step 1: Create missing folders](#step-1-create-missing-folders)
+  - [Step 2: Copy missing templates](#step-2-copy-missing-templates)
+  - [Step 3: Copy PM skills](#step-3-copy-pm-skills-1)
+  - [Step 4: Create missing labels](#step-4-create-missing-labels)
+  - [Step 5: Update team.yaml](#step-5-update-teamyaml)
+  - [Step 6: Commit and push](#step-6-commit-and-push)
+  - [Step 7: Each team member sets up credentials](#step-7-each-team-member-sets-up-credentials)
+  - [Step 8: Migrate existing board data (optional)](#step-8-migrate-existing-board-data-optional)
+  - [Step 9: Validate and start daily standup](#step-9-validate-and-start-daily-standup)
 - [Adding a new team member (both paths)](#adding-a-new-team-member-both-paths)
 - [Updating a role](#updating-a-role)
 - [Troubleshooting](#troubleshooting)
@@ -53,30 +38,103 @@ Use this path when you are starting a brand-new project with no existing board o
 
 ---
 
-### Step 1: Run setup.sh
+### Step 1: Create the PM docs repo and folder structure
 
-Create and `cd` into your PM docs repo (e.g. `kub-wallet-pm`), then run:
+Create a new GitLab repo (e.g. `kub-wallet-pm`) and clone it locally. From the repo root, create all required folders:
 
 ```bash
-/path/to/bitkub-pm-skills/scripts/setup.sh
+mkdir -p rfc grooming kickoff prd breakdown cr daily-standup \
+         .gitlab/issue_templates .gitlab/merge_request_templates
 ```
 
-The script will interactively prompt for:
-- GitLab host URL, project ID, and your personal access token
-- Your display name, GitLab username, role, and email
+---
 
-It will automatically:
-- Create all required folders (`rfc/`, `grooming/`, `kickoff/`, `prd/`, `breakdown/`, `cr/`, `daily-standup/`)
-- Copy issue and MR templates into `.gitlab/`
-- Create all 38 GitLab labels (skips any that already exist)
-- Copy all PM skills into `.claude/skills/` (so every team member gets them on clone)
-- Create `team.yaml` with you as the first member
-- Create your personal `.env`
-- Add `.env` to `.gitignore`
+### Step 2: Copy issue and MR templates
 
-When the script finishes, commit and push:
+From this plugin repo root, copy the templates into your PM docs repo. Replace `$PM_REPO` with the path to your cloned PM docs repo:
 
 ```bash
+PLUGIN=/path/to/bitkub-pm-skills   # where you cloned this plugin repo
+PM_REPO=/path/to/kub-wallet-pm     # your PM docs repo
+
+cp "$PLUGIN/gitlab/templates/issue/"*.md       "$PM_REPO/.gitlab/issue_templates/"
+cp "$PLUGIN/gitlab/templates/merge_request/"*.md  "$PM_REPO/.gitlab/merge_request_templates/"
+```
+
+---
+
+### Step 3: Copy PM skills
+
+Copy all skills into `.claude/skills/` in your PM docs repo. Anyone who clones the repo gets the skills automatically — no extra install step.
+
+> **Do not** add `.claude/` to the PM docs repo's `.gitignore`. Skills must be committed.
+
+```bash
+mkdir -p "$PM_REPO/.claude/skills"
+cp -r "$PLUGIN/skills/." "$PM_REPO/.claude/skills/"
+```
+
+---
+
+### Step 4: Create all GitLab labels
+
+Run the label creation script from `gitlab/repo-structure.md`. Replace `<host>`, `<project_id>`, and `<token>`:
+
+```bash
+GITLAB="https://<host>/api/v4"
+PROJECT=<project_id>
+TOKEN=<your_personal_access_token>
+
+create_label() {
+  curl -s -X POST "$GITLAB/projects/$PROJECT/labels" \
+    -H "PRIVATE-TOKEN: $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\": \"$1\", \"color\": \"$2\", \"description\": \"$3\"}"
+}
+```
+
+See `gitlab/repo-structure.md` for the complete script with all 38 label definitions.
+
+---
+
+### Step 5: Create team.yaml
+
+Copy the template into your PM docs repo root and fill in each team member:
+
+```bash
+cp "$PLUGIN/team.yaml.example" "$PM_REPO/team.yaml"
+```
+
+Edit `team.yaml`:
+
+```yaml
+team:
+  project: Your Project Name
+  members:
+    - display_name: Yo Tharit
+      gitlab_username: yo.tharit
+      role: PM          # PM | PO | Dev | QA | SM | DevOps
+      email: yo.tharit@bitkub.com
+```
+
+Add an entry for every team member. Commit this file — it is shared and not secret.
+
+---
+
+### Step 6: Add .env to .gitignore
+
+In your PM docs repo root, add `.env` to `.gitignore` if it isn't already there:
+
+```bash
+echo ".env" >> "$PM_REPO/.gitignore"
+```
+
+---
+
+### Step 7: Commit and push
+
+```bash
+cd "$PM_REPO"
 git add team.yaml .gitignore .gitlab/ .claude/
 git commit -m "Init PM agent setup"
 git push
@@ -84,9 +142,9 @@ git push
 
 ---
 
-### Step 2: Complete GitLab UI steps
+### Step 8: Complete GitLab UI steps
 
-These three steps require the GitLab web UI (not available via API on Free tier):
+These steps require the GitLab web UI (not available via API on Free tier):
 
 **Issue Board — Plan → Issue Boards → New board** (name it after your project):
 
@@ -107,24 +165,42 @@ Create a second board named `Defects` filtered on `Group: Defects`.
 
 ---
 
-### Step 3: Each team member runs setup-member.sh
+### Step 9: Each team member sets up credentials
 
-Share this command with every team member. Each person runs it **once on their own machine** from the PM docs repo root:
+Each person does this **once on their own machine** from the PM docs repo root:
 
-```bash
-/path/to/bitkub-pm-skills/scripts/setup-member.sh
-```
+1. Pull the latest repo:
+   ```bash
+   git pull
+   ```
 
-The script:
-1. Prompts for their GitLab credentials
-2. Verifies their token and confirms the username matches
-3. Checks if they're in `team.yaml` — if not, adds them and prompts to commit
-4. Ensures `.claude/skills/` is present — copies skills if missing (e.g. for members onboarding before the initial commit landed)
-5. Writes their personal `.env`
+2. Copy the credentials template and fill in their own values:
+   ```bash
+   cp "$PLUGIN/.env.example" .env
+   ```
+   ```env
+   GITLAB_USERNAME=their.gitlab.username
+   GITLAB_BASE_URL=https://gitlab.bitkub.com/api/v4
+   GITLAB_PROJECT_ID=123          # Settings → General → Project ID
+   GITLAB_TOKEN=glpat-xxxx        # Profile → Access Tokens (scope: api)
+   ```
+
+3. If they are not yet in `team.yaml`, add an entry and commit:
+   ```yaml
+   - display_name: Their Name
+     gitlab_username: their.username
+     role: Dev
+     email: their.email@bitkub.com
+   ```
+   ```bash
+   git add team.yaml && git commit -m "Add <Name> to team roster" && git push
+   ```
+
+`.env` is gitignored — each person keeps their own copy with their own token. Never commit `.env`.
 
 ---
 
-### Step 4: Verify and start your first feature
+### Step 10: Verify and start your first feature
 
 Open Claude Code in the PM docs repo and run:
 
@@ -156,24 +232,62 @@ Use this path when your project already has a GitLab board, existing issues, and
 
 ---
 
-### Step 1: Run setup.sh (ongoing mode auto-detected)
+### Step 1: Create missing folders
 
-From your PM docs repo root (or create one if you have a separate docs repo):
+From your PM docs repo root, create any folders that don't already exist:
 
 ```bash
-/path/to/bitkub-pm-skills/scripts/setup.sh
+mkdir -p rfc grooming kickoff prd breakdown cr daily-standup \
+         .gitlab/issue_templates .gitlab/merge_request_templates
 ```
 
-The script detects that `team.yaml` or `prd/` already exists and runs in **ongoing mode** — it will not overwrite any existing files. It will:
+This is safe to run even if the folders already exist.
 
-- Create any missing folders (`rfc/`, `grooming/`, etc.) — skips existing ones
-- Copy any missing `.gitlab/` templates — skips existing ones
-- Create any missing GitLab labels — skips labels that already exist
-- Copy all PM skills into `.claude/skills/` — skips skills that already exist
-- Add you as the first member in `team.yaml` (if it doesn't exist yet), or append you to an existing one
-- Create your `.env` if it doesn't exist
+---
 
-After the script finishes, add existing team members to `team.yaml` manually if they're not there yet. You can find current assignees from your GitLab project:
+### Step 2: Copy missing templates
+
+Copy templates you don't already have from this plugin repo. Replace `$PLUGIN` and `$PM_REPO`:
+
+```bash
+PLUGIN=/path/to/bitkub-pm-skills
+PM_REPO=/path/to/kub-wallet-pm
+
+# Copy only files that don't exist yet (-n = no-clobber)
+cp -n "$PLUGIN/gitlab/templates/issue/"*.md       "$PM_REPO/.gitlab/issue_templates/"
+cp -n "$PLUGIN/gitlab/templates/merge_request/"*.md  "$PM_REPO/.gitlab/merge_request_templates/"
+```
+
+---
+
+### Step 3: Copy PM skills
+
+Copy skills into `.claude/skills/`, skipping any that already exist:
+
+```bash
+mkdir -p "$PM_REPO/.claude/skills"
+cp -rn "$PLUGIN/skills/." "$PM_REPO/.claude/skills/"
+```
+
+---
+
+### Step 4: Create missing labels
+
+Run the label creation script from `gitlab/repo-structure.md`. Labels that already exist will return an API error — this is safe to ignore. Replace `<host>`, `<project_id>`, and `<token>`.
+
+See `gitlab/repo-structure.md` for the complete script.
+
+---
+
+### Step 5: Update team.yaml
+
+If `team.yaml` doesn't exist yet, copy and fill in the template:
+
+```bash
+cp "$PLUGIN/team.yaml.example" "$PM_REPO/team.yaml"
+```
+
+If it already exists, add any missing team members manually. You can find current assignees from your GitLab project:
 
 ```bash
 curl -s "https://<host>/api/v4/projects/<id>/issues?state=opened&per_page=100" \
@@ -181,9 +295,12 @@ curl -s "https://<host>/api/v4/projects/<id>/issues?state=opened&per_page=100" \
   | jq -r '.[].assignees[].username' | sort -u
 ```
 
-Commit and push:
+---
+
+### Step 6: Commit and push
 
 ```bash
+cd "$PM_REPO"
 git add team.yaml .gitignore .gitlab/ .claude/
 git commit -m "Add PM agent setup to project"
 git push
@@ -191,19 +308,21 @@ git push
 
 ---
 
-### Step 2: Each team member runs setup-member.sh
+### Step 7: Each team member sets up credentials
 
-Same as Path A Step 3 — each person runs:
+Same as Path A Step 9 — each person does this once on their own machine:
 
-```bash
-/path/to/bitkub-pm-skills/scripts/setup-member.sh
-```
-
-The script handles self-registration into `team.yaml` automatically if they're not listed yet.
+1. Pull latest: `git pull`
+2. Copy and edit the credentials template:
+   ```bash
+   cp "$PLUGIN/.env.example" .env
+   ```
+   Fill in `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, and `GITLAB_TOKEN`.
+3. If not in `team.yaml`, add an entry and commit.
 
 ---
 
-### Step 3: Migrate existing board data (optional)
+### Step 8: Migrate existing board data (optional)
 
 If you have existing Working Items and Tasks in a monday.com XLSX export, the agent can migrate them to GitLab Issues in one pass.
 
@@ -227,7 +346,7 @@ After confirming, review 5–10 issues in GitLab to verify labels, milestones, a
 
 ---
 
-### Step 4: Validate and start daily standup
+### Step 9: Validate and start daily standup
 
 Ask the agent to validate the board state:
 
@@ -252,29 +371,33 @@ The agent will recompute WI statuses from child Tasks, flag mismatches, and list
 
 ## Adding a new team member (both paths)
 
-The new member runs one script from the PM docs repo root:
+The new member does this once on their own machine from the PM docs repo root:
 
-```bash
-# Pull latest team.yaml first
-git pull
+1. Pull the latest:
+   ```bash
+   git pull
+   ```
 
-# Then run the member setup script
-/path/to/bitkub-pm-skills/scripts/setup-member.sh
-```
+2. Copy and edit the credentials template:
+   ```bash
+   cp /path/to/bitkub-pm-skills/.env.example .env
+   ```
+   Fill in `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, and `GITLAB_TOKEN`.
 
-The script:
-1. Prompts for their GitLab credentials
-2. Verifies the token and confirms the username matches
-3. If not in `team.yaml` — prompts for display name and role, appends the entry, and reminds them to commit
-4. Writes their personal `.env`
+3. If not already in `team.yaml`, add an entry:
+   ```yaml
+   - display_name: New Member
+     gitlab_username: new.member
+     role: Dev          # PM | PO | Dev | QA | SM | DevOps
+     email: new.member@bitkub.com
+   ```
 
-They then commit and push `team.yaml`:
+4. Commit and push `team.yaml`:
+   ```bash
+   git add team.yaml && git commit -m "Add <Name> to team roster" && git push
+   ```
 
-```bash
-git add team.yaml && git commit -m "Add <Name> to team roster" && git push
-```
-
-> Always `git pull` before running the script when multiple people are onboarding at the same time, to avoid merge conflicts on `team.yaml`.
+> Always `git pull` before editing `team.yaml` when multiple people are onboarding at the same time, to avoid merge conflicts.
 
 ---
 
@@ -309,9 +432,9 @@ git push
 |---|---|---|
 | Agent asks for GitLab URL / project ID every session | `.env` not found or `GITLAB_BASE_URL` is blank | Check `.env` exists in the project root. Make sure it has no typos. |
 | Agent greets you by wrong name | `gitlab_username` in `.env` doesn't match the entry in `team.yaml` | Check that `GITLAB_USERNAME` in `.env` exactly matches `gitlab_username` in `team.yaml` (case-sensitive). |
-| "You're not in team.yaml" every session | `team.yaml` is not committed or is out of date | `git pull` to get the latest `team.yaml`. If self-registration wrote a local change, commit and push it. |
+| "You're not in team.yaml" every session | `team.yaml` is not committed or is out of date | `git pull` to get the latest `team.yaml`. If you added a local entry, commit and push it. |
 | `/pm-standup` returns no tasks | Your GitLab token lacks `api` scope, or tasks are already `Done`/`Declined` | Re-generate your token with `api` scope. Verify your open tasks in GitLab directly. |
 | WI status looks wrong on the board | GitLab Free doesn't compute status automatically | Ask the agent: "Recompute WI statuses" — it will re-read all child Tasks and correct the labels. |
 | Breakdown fails: "PRD not approved" | The PRD `status` field is still `draft` | Run `/pm-prd <feature>` and say "PRD approved" to lock it before running breakdown. |
 | CR Path A: PRD didn't version-bump | The approved PRD was edited directly instead of via the agent | Always use `/pm-cr` or `/pm-prd` for post-approval changes. Direct edits skip versioning. |
-| `/pm-standup` (or other `/pm-*`) not in `/help` | `.claude/skills/` missing from the PM docs repo | Run `setup-member.sh` — it will copy the skills. Or `git pull` if the PM lead already committed them. |
+| `/pm-standup` (or other `/pm-*`) not in `/help` | `.claude/skills/` missing or not committed in the PM docs repo | Copy skills manually: `cp -r /path/to/bitkub-pm-skills/skills/. .claude/skills/` then `git add .claude/ && git commit && git push`. |

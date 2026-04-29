@@ -38,9 +38,19 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
 
 ## 2. Install the Plugin
 
-Skills are bundled directly in your PM docs repo and installed automatically by `setup.sh` — no plugin marketplace required.
+Skills are bundled directly in your PM docs repo — no plugin marketplace required.
 
-Run `setup.sh` from your PM docs repo root (see [§3](#3-one-time-gitlab-setup) and [ONBOARDING.md](./ONBOARDING.md) for full steps). The script copies all skills into `.claude/skills/` and includes them in the initial commit. Anyone who clones the repo gets the skills automatically — no extra install step.
+Copy all skills from this plugin repo into `.claude/skills/` in your PM docs repo:
+
+```bash
+PLUGIN=/path/to/bitkub-pm-skills   # where you cloned this plugin repo
+PM_REPO=/path/to/kub-wallet-pm     # your PM docs repo
+
+mkdir -p "$PM_REPO/.claude/skills"
+cp -r "$PLUGIN/skills/." "$PM_REPO/.claude/skills/"
+```
+
+Commit `.claude/` so every team member who clones the PM docs repo gets the skills automatically — no extra install step. Do **not** add `.claude/` to the PM docs repo's `.gitignore`.
 
 Verify: open Claude Code in the PM docs repo and type `/help`. You should see:
 - `/pm-prd`
@@ -76,13 +86,11 @@ kub-wallet-pm/
 
 ### 3b. Deploy issue and MR templates
 
-Copy from this plugin repo into your GitLab repo:
+Copy from this plugin repo into your PM docs repo (replace `$PLUGIN` and `$PM_REPO`):
 
 ```bash
-cp gitlab/templates/issue/*.md      .gitlab/issue_templates/
-cp gitlab/templates/merge_request/*.md  .gitlab/merge_request_templates/
-git add .gitlab/ .claude/ && git commit -m "Add PM issue and MR templates"
-git push
+cp "$PLUGIN/gitlab/templates/issue/"*.md       "$PM_REPO/.gitlab/issue_templates/"
+cp "$PLUGIN/gitlab/templates/merge_request/"*.md  "$PM_REPO/.gitlab/merge_request_templates/"
 ```
 
 ### 3c. Create all labels (bulk script)
