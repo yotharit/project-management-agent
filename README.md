@@ -38,16 +38,24 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
 
 ## 2. Install the Plugin
 
-Run once per machine. Installs for the current project scope:
+This repo is a **plugin marketplace**. Installation is a two-step process.
+
+**Step 1 — Add the marketplace** (once per machine):
 
 ```bash
-claude plugin install https://<your-gitlab-host>/bitkub/kub-wallet-pm
+/plugin marketplace add https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
+```
+
+**Step 2 — Install the plugin** (project scope):
+
+```bash
+/plugin install kub-wallet-pm@bitkub-pm-skills
 ```
 
 To install globally (available in all projects on this machine):
 
 ```bash
-claude plugin install --scope user https://<your-gitlab-host>/bitkub/kub-wallet-pm
+/plugin install --scope user kub-wallet-pm@bitkub-pm-skills
 ```
 
 Verify installation — in Claude Code, type `/help` and confirm these slash commands appear:

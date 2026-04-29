@@ -57,16 +57,20 @@ Use this path when you are starting a brand-new project with no existing board o
 
 ### Step 1: Install the plugin
 
-Run once per machine, inside your project directory:
+Run once per machine:
 
 ```bash
-claude plugin install https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
+# Add the marketplace (once per machine)
+/plugin marketplace add https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
+
+# Install the plugin (project scope)
+/plugin install kub-wallet-pm@bitkub-pm-skills
 ```
 
 To install globally (all projects on this machine):
 
 ```bash
-claude plugin install --scope user https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
+/plugin install --scope user kub-wallet-pm@bitkub-pm-skills
 ```
 
 Verify: open Claude Code and type `/help`. You should see `/pm-prd`, `/pm-standup`, `/pm-bug`, `/pm-breakdown`, `/pm-cr` listed.
@@ -179,7 +183,8 @@ Use this path when your project already has a GitLab board, existing issues, and
 Same as Path A Step 1.
 
 ```bash
-claude plugin install https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
+/plugin marketplace add https://gitlab.bbtcorp.io/bbt-pm/pm-claude-agent-skills
+/plugin install kub-wallet-pm@bitkub-pm-skills
 ```
 
 ---
