@@ -1,9 +1,9 @@
 ---
 name: pm-prd
-description: Generate, revise, or approve a PRD for a software feature from RFC, grooming, and kickoff source documents
+description: Generate, revise, or approve a PRD for a software feature — from RFC/grooming/kickoff sources or from scratch via guided intake
 argument-hint: <feature-slug>
 allowed-tools: [Read, Write, Edit, Glob, Bash]
-version: 1.1.0
+version: 1.2.0
 ---
 
 # PM — PRD Pipeline
@@ -14,11 +14,11 @@ Feature: $ARGUMENTS
 
 ## Hard Rules (apply every time)
 
-1. **Never fabricate.** Every requirement traces to a source document. Missing values → blank + flag in §10 Open Items.
+1. **Never fabricate.** Every requirement traces to a source document or a recorded intake answer. Missing values → blank + flag in §10 Open Items.
 2. **Confirm before writing.** Present draft summary, wait for approval before writing the file.
-3. **Source citations mandatory.** Every FR/NFR/AC carries `[RFC-XXX §N]`, `[Grooming YYYY-MM-DD]`, or `[Kickoff YYYY-MM-DD]`.
+3. **Source citations mandatory.** Every FR/NFR/AC carries `[RFC-XXX §N]`, `[Grooming YYYY-MM-DD]`, `[Kickoff YYYY-MM-DD]`, or `[Intake YYYY-MM-DD]` (for scratch PRDs).
 4. **Language preservation.** Thai/English/mixed source content is verbatim. Agent commentary in English.
-5. **Pipeline gates.** Sources → PRD → Review → Breakdown. Never skip. Never auto-promote.
+5. **Pipeline gates.** Sources/Intake → PRD → Review → Breakdown. Never skip. Never auto-promote.
 6. **PRD versioning.** Every change bumps version + adds Changelog row. Approved PRDs are not silently regenerated.
 
 ---
@@ -71,7 +71,9 @@ Remind user: "PRD v1.0 pushed to branch. Merge the MR into `develop` so QA can v
 
 ### Stage 1 — Generate PRD
 
-**Trigger:** "Generate PRD for <feature>", "Draft PRD from <files>", or argument provided.
+**Trigger:** "Generate PRD for <feature>", "Draft PRD from <files>", "PRD from scratch", or argument provided.
+
+#### Path A — From source documents (RFC / grooming / kickoff available)
 
 Steps:
 1. Scan `rfc/`, `grooming/`, `kickoff/` and propose matching files for the feature slug. Confirm with user.
@@ -80,8 +82,40 @@ Steps:
 4. Every requirement has an inline source citation.
 5. Append Source Coverage appendix mapping every FR/NFR/AC to its source.
 6. Append §10 Open Items for anything unresolvable from sources.
-7. Set frontmatter: `version: 0.1`, `status: draft`, `last_updated: <today>`.
+7. Set frontmatter: `version: 0.1`, `status: draft`, `last_updated: <today>`, `sources: [<files>]`.
 8. Present draft summary → wait for approval → write to `prd/<feature-slug>.md`.
+
+#### Path B — From scratch (no source documents)
+
+Use this path when: no RFC/grooming/kickoff files exist, or user explicitly says "from scratch" / "no documents".
+
+**Step 1 — Intake interview.** Ask the following questions one group at a time. Wait for answers before proceeding to the next group. Do not generate the PRD until all required questions are answered.
+
+**Group 1 — Identity**
+- (Required) What is the feature name?
+- (Required) Who is the feature owner?
+- (Required) What problem does this feature solve? (background & motivation)
+
+**Group 2 — Scope**
+- (Required) What are the goals — what does success look like?
+- (Required) What is explicitly out of scope / non-goals?
+- (Required) Who are the target users or personas?
+
+**Group 3 — Requirements**
+- (Required) List the core things the system must do (functional requirements). Bullet points are fine.
+- (Optional) Any performance, security, or compliance constraints?
+- (Optional) Describe the main user flows or journeys (UX/UI flows).
+
+**Group 4 — Validation**
+- (Required) How will you know this feature is done? (acceptance criteria, even rough)
+- (Optional) Any dependencies — other teams, services, or features this relies on?
+- (Optional) Any open questions or decisions still pending?
+
+**Step 2 — Confirm intake.** After all groups answered, present a structured summary of all answers. Ask user to confirm or correct before writing the PRD.
+
+**Step 3 — Draft PRD.** Use the template below. Cite every FR/NFR/AC as `[Intake <today's date>]`. Set frontmatter `sources: []`.
+
+**Step 4 — Write.** Present draft summary → wait for approval → write to `prd/<feature-slug>.md`.
 
 ### Stage 2 — Revise PRD
 
@@ -124,7 +158,7 @@ version: 0.1
 status: draft
 feature_owner: <name>
 last_updated: <YYYY-MM-DD>
-sources:
+sources:                        # list source files, or [] for scratch PRDs
   - rfc/KUB-RFC-XXX_<slug>.md
   - grooming/YYYY-MM-DD-<feature>.md
   - kickoff/YYYY-MM-DD-kickoff-<feature>.md
@@ -133,9 +167,9 @@ sources:
 # <Feature Name> — PRD
 
 ## Changelog
-| Version | Date       | Author        | Changes                                |
-|---------|------------|---------------|----------------------------------------|
-| 0.1     | YYYY-MM-DD | Agent (draft) | Initial draft synthesized from sources |
+| Version | Date       | Author        | Changes                                          |
+|---------|------------|---------------|--------------------------------------------------|
+| 0.1     | YYYY-MM-DD | Agent (draft) | Initial draft synthesized from sources / intake |
 
 ## 1. Overview
 Background and motivation. [RFC-XXX §3]
@@ -173,9 +207,10 @@ Explicit non-goals (often from RFC §10).
 Unresolved questions. Must be empty before approval.
 
 ## 11. References
-- RFC: rfc/KUB-RFC-XXX_<slug>.md
-- Grooming: grooming/YYYY-MM-DD-<feature>.md
-- Kickoff: kickoff/YYYY-MM-DD-kickoff-<feature>.md
+- RFC: rfc/KUB-RFC-XXX_<slug>.md          ← omit if scratch
+- Grooming: grooming/YYYY-MM-DD-<feature>.md  ← omit if scratch
+- Kickoff: kickoff/YYYY-MM-DD-kickoff-<feature>.md  ← omit if scratch
+- Intake: YYYY-MM-DD (from scratch session)  ← include if scratch
 
 ## Appendix A — Source Coverage
 | Requirement | Source location               |

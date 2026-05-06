@@ -218,7 +218,12 @@ Then start your first feature:
 1. Dev team writes RFC → rfc/YOUR-RFC-001_<slug>.md   (see knowledge/rfc-template.md)
 2. PM runs grooming → grooming/YYYY-MM-DD-<feature>.md  (see knowledge/mom-template.md)
 3. PO runs kickoff → kickoff/YYYY-MM-DD-kickoff-<feature>.md
-4. /pm-prd <feature>          → generates PRD draft
+   — OR — skip steps 1–3 if no documents exist yet (use scratch path below)
+4. /pm-prd <feature>          → generates PRD draft from source documents
+   — OR —
+   /pm-prd <feature> "from scratch"
+                               → guided intake interview → PRD draft
+                                 (when no RFC/grooming/kickoff documents exist)
 5. Review via MR, then "PRD approved"
 6. /pm-breakdown <feature>    → proposes Working Items as YAML
 7. "Apply breakdown"          → creates GitLab Issues

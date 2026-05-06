@@ -239,11 +239,18 @@ The agent:
 
 Covers: generate a PRD draft → review → approve → lock.
 
-**Generate a new PRD:**
+**Generate from source documents (RFC / grooming / kickoff available):**
 ```
 /pm-prd transaction-limit
 ```
 The agent scans `rfc/`, `grooming/`, `kickoff/` for matching files, proposes which to use, then drafts `prd/transaction-limit.md` with inline source citations.
+
+**Generate from scratch (no source documents):**
+```
+/pm-prd transaction-limit
+> from scratch
+```
+The agent runs a guided intake interview — asking questions in four groups (Identity, Scope, Requirements, Validation) — then drafts the PRD with `[Intake YYYY-MM-DD]` citations.
 
 **Revise a section:**
 ```
@@ -507,7 +514,12 @@ kub-wallet-pm/
   PM/PO ───────────▶│  RFC (.md)  │
   PO ──────────────▶│  Grooming   │  (manual, read-only)
                     │  Kickoff    │
-                    └──────┬──────┘
+                    └──────┬──────┘    ╔══════════════════════╗
+                           │           ║  No documents?       ║
+                           │           ║  /pm-prd (scratch)   ║
+                           │           ║  → intake interview  ║
+                           │           ╚══════════╤═══════════╝
+                           └──────────────────────┘
                            │ /pm-prd <feature>
                            │ branch: prd/<feature>
                     ┌──────▼──────┐
@@ -558,7 +570,7 @@ Stakeholder request
 ```
 
 **Hard rules that always apply (regardless of skill):**
-- Never fabricate — every value traces to a source document
+- Never fabricate — every value traces to a source document or recorded intake answer
 - Confirm before writing, pushing, or creating MRs
 - WI status is a rollup — derived from child Tasks, never set directly
 - `Ready to Review → Done` requires explicit user approval
