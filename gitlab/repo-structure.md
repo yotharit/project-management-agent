@@ -17,6 +17,8 @@ kub-wallet-pm/                          ← GitLab repo root
 │   └── <feature-slug>.md
 ├── breakdown/
 │   └── <feature-slug>_v1.0.yaml
+├── cr/
+│   └── <feature-slug>-<NNN>.yaml
 ├── daily-standup/
 │   └── YYYY-MM-DD.md
 └── .gitlab/
@@ -34,7 +36,9 @@ kub-wallet-pm/                          ← GitLab repo root
 |---|---|
 | PRD draft | `prd/<feature-slug>` |
 | Breakdown draft | `breakdown/<feature-slug>` |
-| Monthly standup reports | `standup/YYYY-MM` (append daily files) |
+| Change request | `cr/<feature-slug>-<NNN>` |
+| Daily standup | `standup/<YYYY-MM-DD>` |
+| Team registration | `chore/team-register-<username>` |
 | RFC / grooming / kickoff (read-only) | Committed directly to `main` by authors |
 
 ## PRD Review Gate — Merge Request workflow
@@ -43,21 +47,27 @@ The pipeline gate **"PRD → Review"** (§6 Stage 2) maps to a GitLab MR:
 
 | Pipeline gate | GitLab action |
 |---|---|
-| Agent generates PRD draft | Commit `prd/<feature-slug>.md` to branch `prd/<feature-slug>`, open MR → `main` using the `prd-review` MR template |
+| Agent generates PRD draft | Commit `prd/<feature-slug>.md` to branch `prd/<feature-slug>`, open MR → `develop` using the `prd-review` MR template |
 | User/team review | Reviewer leaves inline comments on the MR diff |
-| PRD approved | Author checks all boxes in the MR checklist, reviewer approves, MR is merged |
+| PRD approved | Author checks all boxes in the MR checklist, reviewer approves, MR is merged into `develop` |
+| QA validates | QA tests PM artifacts on `develop` (Dev Release) |
 | Agent locks PRD | After merge: set `version: 1.0`, `status: approved` in frontmatter, add Changelog row |
+| PM gate | PM/PO opens separate MR: `develop` → `main` to lock the PRD |
 
 ### Free tier note on MR approvals
 GitLab Free does not enforce MR approval rules (Premium feature).
-Use the checklist in `prd-review.md` as the manual gate — the author must tick every box before merging. The merge commit timestamp in `main` is the audit trail for approval.
+Use the checklist in `prd-review.md` as the manual gate — the author must tick every box before merging. The merge commit timestamp in `develop` is the audit trail for approval.
 
 ## Protected branch setup
 
 | Branch | Protection |
 |---|---|
-| `main` | No direct push. All changes via MR. |
-| `prd/*` | Author + PM can push; merge to `main` requires MR. |
+| `main` | No direct push. All changes via MR from `develop` (PM gate). |
+| `develop` | No direct push. All artifact branches merge here first. |
+| `prd/*` | Author + PM can push; merge to `develop` requires MR. |
+| `breakdown/*` | Author + PM can push; merge to `develop` requires MR. |
+| `cr/*` | Author + PM can push; merge to `develop` requires MR. |
+| `standup/*` | Author can push; merge to `develop` requires MR. |
 
 Configure at: **Settings → Repository → Protected branches**
 

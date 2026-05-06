@@ -14,6 +14,7 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
 3. [One-time GitLab Setup](#3-one-time-gitlab-setup)
 4. [Configure Identity & GitLab Credentials](#4-configure-identity--gitlab-credentials)
 5. [How to Use](#5-how-to-use)
+   - [/pm-setup — Repository Setup](#pm-setup--repository-setup)
    - [Auto-trigger (pm-agent)](#auto-trigger--pm-agent)
    - [/pm-prd — PRD Pipeline](#pm-prd--prd-pipeline)
    - [/pm-breakdown — Feature Breakdown](#pm-breakdown--feature-breakdown)
@@ -47,7 +48,7 @@ Install once per machine. Skills become available system-wide in every Claude Co
 /reload-plugins
 ```
 
-Verify by typing `/help` — you should see `/pm-prd`, `/pm-standup`, `/pm-bug`, `/pm-breakdown`, `/pm-cr`.
+Verify by typing `/help` — you should see `/pm-setup`, `/pm-prd`, `/pm-standup`, `/pm-bug`, `/pm-breakdown`, `/pm-cr`.
 
 To update later:
 ```
@@ -55,7 +56,17 @@ To update later:
 /reload-plugins
 ```
 
-> **Note:** The `pm-agent` skill is model-invoked (auto-triggered) — it does not appear as a slash command. Per-project config (`.env`, `team.yaml`) is still required in each PM docs repo — see §4.
+> **Note:** The `pm-agent` skill is model-invoked (auto-triggered) — it does not appear as a slash command. Per-project config (`.env`, `team.yaml`) is still required in each PM docs repo — run `/pm-setup` in your PM docs repo to configure it.
+
+### First time in a new PM docs repo?
+
+After installing the plugin, open Claude Code **in your PM docs repo** and run:
+
+```
+/pm-setup
+```
+
+This sets up folders, GitLab labels, templates, `team.yaml`, and the `develop` branch in one guided flow. See §3 for what it automates and what still requires the GitLab web UI.
 
 ---
 
@@ -74,6 +85,7 @@ kub-wallet-pm/
 ├── kickoff/
 ├── prd/
 ├── breakdown/
+├── cr/
 ├── daily-standup/
 └── .gitlab/
     ├── issue_templates/
@@ -124,9 +136,14 @@ Create a separate board named `Defects` filtered on `Group: Defects`.
 
 **Plan → Milestones → New milestone** for each release, e.g. `v3.0.0-beta.24`.
 
-### 3f. Protect the main branch
+### 3f. Protect branches
 
-**Settings → Repository → Protected branches** — protect `main`, no direct push.
+**Settings → Repository → Protected branches**
+
+| Branch | Rule |
+|---|---|
+| `main` | No direct push. All changes via MR from `develop`. |
+| `develop` | No direct push. All artifact branches merge here first. |
 
 ---
 
@@ -176,6 +193,18 @@ GITLAB_TOKEN=glpat-xxxx        # Profile → Access Tokens (scope: api)
 ---
 
 ## 5. How to Use
+
+### /pm-setup — Repository Setup
+
+Run once per PM docs repository after installing the plugin.
+
+```
+/pm-setup
+```
+
+Automates: folders, GitLab labels (38), issue/MR templates, `team.yaml`, `develop` branch, commit & push. Prints a checklist of the remaining manual GitLab UI steps (Issue Board, Milestones, Branch Protection).
+
+---
 
 ### Auto-trigger — pm-agent
 
@@ -433,6 +462,7 @@ bitkub-pm-skills/              ← this plugin repo
 │   └── plugin.json            ← plugin metadata
 ├── skills/
 │   ├── pm-agent/SKILL.md      ← model-invoked, auto-triggers
+│   ├── pm-setup/SKILL.md      ← /pm-setup  (run once per PM docs repo)
 │   ├── pm-prd/SKILL.md        ← /pm-prd
 │   ├── pm-standup/SKILL.md    ← /pm-standup
 │   ├── pm-bug/SKILL.md        ← /pm-bug
@@ -449,7 +479,11 @@ bitkub-pm-skills/              ← this plugin repo
 │       │   └── defect.md
 │       └── merge_request/
 │           └── prd-review.md
-└── generation-prompt.md       ← full agent specification (source of truth)
+├── knowledge/
+│   ├── rfc-template.md        ← RFC authoring guide (for dev team)
+│   └── mom-template.md        ← Meeting/grooming notes template (for PM)
+└── initial-generation-prompt/
+    └── generation-prompt.md   ← DEPRECATED: original monday.com spec (historical only)
 ```
 
 Your **PM docs repo** (`kub-wallet-pm`) on GitLab holds the actual project artifacts:

@@ -9,7 +9,7 @@ description: >
   Also activates for intents like "what's the status of", "who is working on",
   "generate today's standup", "open a bug", "assign me to", "log a CR",
   "stakeholder wants to change", "impact assessment", or "migrate this XLSX".
-version: 1.0.0
+version: 1.1.0
 ---
 
 # IT Project Management Agent
@@ -151,6 +151,7 @@ Full label list: `gitlab/labels.yaml`. API reference: `gitlab/api-integration.md
 
 | User says (paraphrase) | Action |
 |---|---|
+| "Setup PM repo" / "Init PM agent" / "Initialize this project" | Invoke `/pm-setup` |
 | "Generate PRD for <feature>" | PRD pipeline Stage 1 — or invoke `/pm-prd <feature>` |
 | "Revise PRD §4" / "Update FR-2" | PRD Stage 2 — bump draft version, add Changelog row |
 | "PRD approved" / "Lock PRD" | PRD Stage 2 — set v1.0, status=approved |

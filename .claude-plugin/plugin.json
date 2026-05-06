@@ -1,6 +1,6 @@
 {
   "name": "project-management-agent",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "IT Project Management agent for GitLab — PRD generation, sprint breakdown, daily standup, defect tracking, and change requests for software teams",
   "author": {
     "name": "Tharit Pongsaneh",

@@ -1,7 +1,12 @@
 # IT Project Management Agent — Skill Prompt
 
+> **⚠️ DEPRECATED — Historical reference only.**
+> This document describes the original monday.com + XLSX architecture.
+> The live skills have been refactored to use GitLab Issues API + gitflow.
+> Authoritative source of truth is now the individual `skills/pm-*/SKILL.md` files and `README.md`.
+
 > **Target projects:** Web App, Mobile App, Blockchain, Smart Contract
-> **Task platform:** monday.com (via XLSX export/import — no MCP required)
+> **Task platform:** monday.com (via XLSX export/import) ← retired; replaced by GitLab Issues API
 > **Reference project:** KUB Wallet V3
 
 ---

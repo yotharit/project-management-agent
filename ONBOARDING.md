@@ -36,6 +36,8 @@
 
 Use this path when you are starting a brand-new project with no existing board or task history.
 
+> **Shortcut:** After completing Steps 1–3 (create repo, copy templates, copy skills), run `/pm-setup` in Claude Code from your PM docs repo. It automates Steps 4–9 and guides you through the remaining manual GitLab UI steps.
+
 ---
 
 ### Step 1: Create the PM docs repo and folder structure
@@ -213,8 +215,8 @@ Expected: the agent greets you by display name and shows your open tasks (empty 
 Then start your first feature:
 
 ```
-1. Dev team writes RFC → rfc/YOUR-RFC-001_<slug>.md
-2. PM runs grooming → grooming/YYYY-MM-DD-<feature>.md
+1. Dev team writes RFC → rfc/YOUR-RFC-001_<slug>.md   (see knowledge/rfc-template.md)
+2. PM runs grooming → grooming/YYYY-MM-DD-<feature>.md  (see knowledge/mom-template.md)
 3. PO runs kickoff → kickoff/YYYY-MM-DD-kickoff-<feature>.md
 4. /pm-prd <feature>          → generates PRD draft
 5. Review via MR, then "PRD approved"
@@ -229,6 +231,8 @@ Then start your first feature:
 ## Path B — Ongoing Project
 
 Use this path when your project already has a GitLab board, existing issues, and team members who are already working.
+
+> **Shortcut:** After completing Steps 1–3 (create folders, copy templates, copy skills), run `/pm-setup ongoing` in Claude Code from your PM docs repo. It automates Steps 4–7 and offers optional XLSX migration.
 
 ---
 

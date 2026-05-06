@@ -3,7 +3,7 @@
   Deploy to: .gitlab/merge_request_templates/prd-review.md in your GitLab repo
 
   Source branch : prd/<feature-slug>
-  Target branch : main
+  Target branch : develop
   Assignee      : Feature Owner
 -->
 
@@ -52,7 +52,7 @@ GitLab Free has no enforced approval rules — this checklist is the gate.
 
 ## On Merge — Agent Actions
 
-After this MR is merged to `main`, the agent will:
+After this MR is merged to `develop`, the agent will:
 1. Set `version: 1.0`, `status: approved` in PRD frontmatter
 2. Add Changelog row: `v1.0 — Approved — merged by <merger> on <YYYY-MM-DD>`
 3. Treat the PRD as locked (§6a) — no silent regeneration
