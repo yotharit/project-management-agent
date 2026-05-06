@@ -39,28 +39,23 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
 
 ## 2. Install the Plugin
 
-Skills are bundled directly in your PM docs repo — no plugin marketplace required.
+Install once per machine. Skills become available system-wide in every Claude Code session.
 
-Copy all skills from this plugin repo into `.claude/skills/` in your PM docs repo:
-
-```bash
-PLUGIN=/path/to/bitkub-pm-skills   # where you cloned this plugin repo
-PM_REPO=/path/to/kub-wallet-pm     # your PM docs repo
-
-mkdir -p "$PM_REPO/.claude/skills"
-cp -r "$PLUGIN/skills/." "$PM_REPO/.claude/skills/"
+```
+/plugin marketplace add https://github.com/yotharit/project-management-agent
+/plugin install project-management-agent
+/reload-plugins
 ```
 
-Commit `.claude/` so every team member who clones the PM docs repo gets the skills automatically — no extra install step. Do **not** add `.claude/` to the PM docs repo's `.gitignore`.
+Verify by typing `/help` — you should see `/pm-prd`, `/pm-standup`, `/pm-bug`, `/pm-breakdown`, `/pm-cr`.
 
-Verify: open Claude Code in the PM docs repo and type `/help`. You should see:
-- `/pm-prd`
-- `/pm-standup`
-- `/pm-bug`
-- `/pm-breakdown`
-- `/pm-cr`
+To update later:
+```
+/plugin update project-management-agent
+/reload-plugins
+```
 
-> **Note:** The `pm-agent` skill is model-invoked (auto-triggered) — it does not appear as a slash command.
+> **Note:** The `pm-agent` skill is model-invoked (auto-triggered) — it does not appear as a slash command. Per-project config (`.env`, `team.yaml`) is still required in each PM docs repo — see §4.
 
 ---
 

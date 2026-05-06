@@ -1,8 +1,24 @@
 {
-  "name": "kub-wallet-pm",
-  "description": "IT Project Management Agent for software projects (Web, Mobile, Blockchain, Smart Contract) — PRD generation, standup, defect tracking, breakdown, and GitLab integration",
+  "name": "project-management-agent",
+  "version": "1.0.0",
+  "description": "IT Project Management agent for GitLab — PRD generation, sprint breakdown, daily standup, defect tracking, and change requests for software teams",
   "author": {
-    "name": "Bitkub PM Team",
-    "email": "yo.tharit@bitkub.com"
-  }
+    "name": "Tharit Pongsaneh",
+    "url": "https://github.com/yotharit"
+  },
+  "repository": "https://github.com/yotharit/project-management-agent",
+  "license": "MIT",
+  "keywords": [
+    "pm",
+    "gitlab",
+    "prd",
+    "standup",
+    "breakdown",
+    "project-management",
+    "agile"
+  ],
+  "mcpServers": {},
+  "skills": [
+    "./skills/"
+  ]
 }
