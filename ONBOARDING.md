@@ -9,11 +9,11 @@
   - [Step 1: Create the PM docs repo and folder structure](#step-1-create-the-pm-docs-repo-and-folder-structure)
   - [Step 2: Copy issue and MR templates](#step-2-copy-issue-and-mr-templates)
   - [Step 3: Copy PM skills](#step-3-copy-pm-skills)
-  - [Step 4: Create all GitLab labels](#step-4-create-all-gitlab-labels)
+  - [Step 4: Create all labels](#step-4-create-all-labels)
   - [Step 5: Create team.yaml](#step-5-create-teamyaml)
   - [Step 6: Add .env to .gitignore](#step-6-add-env-to-gitignore)
   - [Step 7: Commit and push](#step-7-commit-and-push)
-  - [Step 8: Complete GitLab UI steps](#step-8-complete-gitlab-ui-steps)
+  - [Step 8: Complete provider UI steps](#step-8-complete-provider-ui-steps)
   - [Step 9: Each team member sets up credentials](#step-9-each-team-member-sets-up-credentials)
   - [Step 10: Verify and start your first feature](#step-10-verify-and-start-your-first-feature)
 - [Path B — Ongoing Project](#path-b--ongoing-project)
@@ -36,17 +36,24 @@
 
 Use this path when you are starting a brand-new project with no existing board or task history.
 
-> **Shortcut:** After completing Steps 1–3 (create repo, copy templates, copy skills), run `/pm-setup` in Claude Code from your PM docs repo. It automates Steps 4–9 and guides you through the remaining manual GitLab UI steps.
+> **Shortcut:** After completing Steps 1–3 (create repo, copy templates, copy skills), run `/pm-setup` in Claude Code from your PM docs repo. It automates Steps 4–9 and guides you through the remaining manual provider UI steps.
 
 ---
 
 ### Step 1: Create the PM docs repo and folder structure
 
-Create a new GitLab repo (e.g. `kub-wallet-pm`) and clone it locally. From the repo root, create all required folders:
+Create a new repo (e.g. `kub-wallet-pm`) and clone it locally. From the repo root, create all required folders:
 
+**GitLab:**
 ```bash
 mkdir -p rfc grooming kickoff prd breakdown cr daily-standup \
          .gitlab/issue_templates .gitlab/merge_request_templates
+```
+
+**GitHub:**
+```bash
+mkdir -p rfc grooming kickoff prd breakdown cr daily-standup \
+         .github/ISSUE_TEMPLATE
 ```
 
 ---
@@ -59,8 +66,12 @@ From this plugin repo root, copy the templates into your PM docs repo. Replace `
 PLUGIN=/path/to/bitkub-pm-skills   # where you cloned this plugin repo
 PM_REPO=/path/to/kub-wallet-pm     # your PM docs repo
 
-cp "$PLUGIN/gitlab/templates/issue/"*.md       "$PM_REPO/.gitlab/issue_templates/"
+# GitLab:
+cp "$PLUGIN/gitlab/templates/issue/"*.md          "$PM_REPO/.gitlab/issue_templates/"
 cp "$PLUGIN/gitlab/templates/merge_request/"*.md  "$PM_REPO/.gitlab/merge_request_templates/"
+
+# GitHub:
+cp "$PLUGIN/gitlab/templates/issue/"*.md  "$PM_REPO/.github/ISSUE_TEMPLATE/"
 ```
 
 ---
@@ -78,9 +89,11 @@ cp -r "$PLUGIN/skills/." "$PM_REPO/.claude/skills/"
 
 ---
 
-### Step 4: Create all GitLab labels
+### Step 4: Create all labels
 
-Run the label creation script from `gitlab/repo-structure.md`. Replace `<host>`, `<project_id>`, and `<token>`:
+See `knowledge/git-provider.md` for the label creation API for both providers.
+
+**GitLab** — replace `<host>`, `<project_id>`, and `<token>`:
 
 ```bash
 GITLAB="https://<host>/api/v4"
@@ -95,7 +108,18 @@ create_label() {
 }
 ```
 
-See `gitlab/repo-structure.md` for the complete script with all 38 label definitions.
+See `gitlab/repo-structure.md` for the complete GitLab label list (38 labels).
+
+**GitHub** — replace `<owner>`, `<repo>`, and `<token>`:
+
+```bash
+# POST each label — color without # prefix
+curl -s -X POST "https://api.github.com/repos/<owner>/<repo>/labels" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Status: Todo", "color": "e0e0e0"}'
+# See knowledge/git-provider.md for the full label list
+```
 
 ---
 
@@ -114,7 +138,7 @@ team:
   project: Your Project Name
   members:
     - display_name: Yo Tharit
-      gitlab_username: yo.tharit
+      username: yo.tharit
       role: PM          # PM | PO | Dev | QA | SM | DevOps
       email: yo.tharit@bitkub.com
 ```
@@ -137,16 +161,16 @@ echo ".env" >> "$PM_REPO/.gitignore"
 
 ```bash
 cd "$PM_REPO"
-git add team.yaml .gitignore .gitlab/ .claude/
+git add team.yaml .gitignore .gitlab/ .github/ .claude/
 git commit -m "Init PM agent setup"
 git push
 ```
 
 ---
 
-### Step 8: Complete GitLab UI steps
+### Step 8: Complete provider UI steps
 
-These steps require the GitLab web UI (not available via API on Free tier):
+These steps may require the provider web UI:
 
 **Issue Board — Plan → Issue Boards → New board** (name it after your project):
 
@@ -181,16 +205,25 @@ Each person does this **once on their own machine** from the PM docs repo root:
    cp "$PLUGIN/.env.example" .env
    ```
    ```env
+   GIT_PROVIDER=gitlab            # gitlab | github
+
+   # GitLab (used when GIT_PROVIDER=gitlab)
    GITLAB_USERNAME=their.gitlab.username
    GITLAB_BASE_URL=https://gitlab.bitkub.com/api/v4
    GITLAB_PROJECT_ID=123          # Settings → General → Project ID
    GITLAB_TOKEN=glpat-xxxx        # Profile → Access Tokens (scope: api)
+
+   # GitHub (used when GIT_PROVIDER=github)
+   # GITHUB_USERNAME=their.github.username
+   # GITHUB_OWNER=org-or-username
+   # GITHUB_REPO=repo-name
+   # GITHUB_TOKEN=ghp_xxxx
    ```
 
 3. If they are not yet in `team.yaml`, add an entry and commit:
    ```yaml
    - display_name: Their Name
-     gitlab_username: their.username
+     username: their.username
      role: Dev
      email: their.email@bitkub.com
    ```
@@ -226,7 +259,7 @@ Then start your first feature:
                                  (when no RFC/grooming/kickoff documents exist)
 5. Review via MR, then "PRD approved"
 6. /pm-breakdown <feature>    → proposes Working Items as YAML
-7. "Apply breakdown"          → creates GitLab Issues
+7. "Apply breakdown"          → creates Issues
 8. Dev/QA create Task issues under each Working Item
 9. /pm-standup (daily)        → logs progress, updates labels
 ```
@@ -245,9 +278,16 @@ Use this path when your project already has a GitLab board, existing issues, and
 
 From your PM docs repo root, create any folders that don't already exist:
 
+**GitLab:**
 ```bash
 mkdir -p rfc grooming kickoff prd breakdown cr daily-standup \
          .gitlab/issue_templates .gitlab/merge_request_templates
+```
+
+**GitHub:**
+```bash
+mkdir -p rfc grooming kickoff prd breakdown cr daily-standup \
+         .github/ISSUE_TEMPLATE
 ```
 
 This is safe to run even if the folders already exist.
@@ -263,8 +303,12 @@ PLUGIN=/path/to/bitkub-pm-skills
 PM_REPO=/path/to/kub-wallet-pm
 
 # Copy only files that don't exist yet (-n = no-clobber)
-cp -n "$PLUGIN/gitlab/templates/issue/"*.md       "$PM_REPO/.gitlab/issue_templates/"
+# GitLab:
+cp -n "$PLUGIN/gitlab/templates/issue/"*.md          "$PM_REPO/.gitlab/issue_templates/"
 cp -n "$PLUGIN/gitlab/templates/merge_request/"*.md  "$PM_REPO/.gitlab/merge_request_templates/"
+
+# GitHub:
+cp -n "$PLUGIN/gitlab/templates/issue/"*.md  "$PM_REPO/.github/ISSUE_TEMPLATE/"
 ```
 
 ---
@@ -282,9 +326,11 @@ cp -rn "$PLUGIN/skills/." "$PM_REPO/.claude/skills/"
 
 ### Step 4: Create missing labels
 
-Run the label creation script from `gitlab/repo-structure.md`. Labels that already exist will return an API error — this is safe to ignore. Replace `<host>`, `<project_id>`, and `<token>`.
+See `knowledge/git-provider.md` for the label creation API for both providers. Labels that already exist will return an API error — this is safe to ignore.
 
-See `gitlab/repo-structure.md` for the complete script.
+**GitLab:** Run the label creation script from `gitlab/repo-structure.md` — replace `<host>`, `<project_id>`, and `<token>`.
+
+**GitHub:** POST each label to `/repos/:owner/:repo/labels` — color without `#` prefix. See `knowledge/git-provider.md` for details.
 
 ---
 
@@ -296,12 +342,20 @@ If `team.yaml` doesn't exist yet, copy and fill in the template:
 cp "$PLUGIN/team.yaml.example" "$PM_REPO/team.yaml"
 ```
 
-If it already exists, add any missing team members manually. You can find current assignees from your GitLab project:
+If it already exists, add any missing team members manually. You can find current assignees:
 
+**GitLab:**
 ```bash
 curl -s "https://<host>/api/v4/projects/<id>/issues?state=opened&per_page=100" \
   -H "PRIVATE-TOKEN: <your_token>" \
   | jq -r '.[].assignees[].username' | sort -u
+```
+
+**GitHub:**
+```bash
+curl -s "https://api.github.com/repos/<owner>/<repo>/issues?state=open&per_page=100" \
+  -H "Authorization: Bearer <your_token>" \
+  | jq -r '.[].assignees[].login' | sort -u
 ```
 
 ---
@@ -310,7 +364,7 @@ curl -s "https://<host>/api/v4/projects/<id>/issues?state=opened&per_page=100" \
 
 ```bash
 cd "$PM_REPO"
-git add team.yaml .gitignore .gitlab/ .claude/
+git add team.yaml .gitignore .gitlab/ .github/ .claude/
 git commit -m "Add PM agent setup to project"
 git push
 ```
@@ -326,21 +380,21 @@ Same as Path A Step 9 — each person does this once on their own machine:
    ```bash
    cp "$PLUGIN/.env.example" .env
    ```
-   Fill in `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, and `GITLAB_TOKEN`.
+   Fill in `GIT_PROVIDER` and the credentials for your provider (see `.env.example` for all fields).
 3. If not in `team.yaml`, add an entry and commit.
 
 ---
 
 ### Step 8: Migrate existing board data (optional)
 
-If you have existing Working Items and Tasks in a monday.com XLSX export, the agent can migrate them to GitLab Issues in one pass.
+If you have existing Working Items and Tasks in a monday.com XLSX export, the agent can migrate them to Issues in one pass.
 
-> Skip this step if your board is already fully in GitLab Issues.
+> Skip this step if your board is already fully in Issues.
 
 Provide the XLSX file to Claude and run:
 
 ```
-Migrate this XLSX to GitLab issues
+Migrate this XLSX to issues
 ```
 
 The agent will:
@@ -348,10 +402,10 @@ The agent will:
 2. Validate — flag missing Type, Priority, duplicate IDs, unknown statuses
 3. Recompute — apply status rollup rules to all Working Items
 4. Show a summary and wait for your approval
-5. Create GitLab Issues for each Working Item and Task (with `Legacy ID: KUB-XXXX` in description)
+5. Create Issues for each Working Item and Task (with `Legacy ID: KUB-XXXX` in description)
 6. Report counts and any flagged items
 
-After confirming, review 5–10 issues in GitLab to verify labels, milestones, and `Part of #<iid>` parent–child links look correct.
+After confirming, review 5–10 issues on the board to verify labels, milestones, and `Part of #<iid>` parent–child links look correct.
 
 ---
 
@@ -391,12 +445,12 @@ The new member does this once on their own machine from the PM docs repo root:
    ```bash
    cp /path/to/bitkub-pm-skills/.env.example .env
    ```
-   Fill in `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, and `GITLAB_TOKEN`.
+   Fill in `GIT_PROVIDER` and the credentials for your provider (see `.env.example` for all fields).
 
 3. If not already in `team.yaml`, add an entry:
    ```yaml
    - display_name: New Member
-     gitlab_username: new.member
+     username: new.member
      role: Dev          # PM | PO | Dev | QA | SM | DevOps
      email: new.member@bitkub.com
    ```
@@ -439,11 +493,11 @@ git push
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Agent asks for GitLab URL / project ID every session | `.env` not found or `GITLAB_BASE_URL` is blank | Check `.env` exists in the project root. Make sure it has no typos. |
-| Agent greets you by wrong name | `gitlab_username` in `.env` doesn't match the entry in `team.yaml` | Check that `GITLAB_USERNAME` in `.env` exactly matches `gitlab_username` in `team.yaml` (case-sensitive). |
+| Agent asks for credentials every session | `.env` not found or provider vars are blank | Check `.env` exists in the project root. Verify `GIT_PROVIDER` and matching credentials are set. |
+| Agent greets you by wrong name | `username` in `team.yaml` doesn't match the value in `.env` | Check that the `USERNAME` var in `.env` exactly matches `username` in `team.yaml` (case-sensitive). |
 | "You're not in team.yaml" every session | `team.yaml` is not committed or is out of date | `git pull` to get the latest `team.yaml`. If you added a local entry, commit and push it. |
-| `/pm-standup` returns no tasks | Your GitLab token lacks `api` scope, or tasks are already `Done`/`Declined` | Re-generate your token with `api` scope. Verify your open tasks in GitLab directly. |
-| WI status looks wrong on the board | GitLab Free doesn't compute status automatically | Ask the agent: "Recompute WI statuses" — it will re-read all child Tasks and correct the labels. |
+| `/pm-standup` returns no tasks | Token lacks required scope, or tasks are already `Done`/`Declined` | GitLab: re-generate token with `api` scope. GitHub: use `repo` scope. Verify open tasks on the board directly. |
+| WI status looks wrong on the board | Status is not computed automatically | Ask the agent: "Recompute WI statuses" — it will re-read all child Tasks and correct the labels. |
 | Breakdown fails: "PRD not approved" | The PRD `status` field is still `draft` | Run `/pm-prd <feature>` and say "PRD approved" to lock it before running breakdown. |
 | CR Path A: PRD didn't version-bump | The approved PRD was edited directly instead of via the agent | Always use `/pm-cr` or `/pm-prd` for post-approval changes. Direct edits skip versioning. |
 | `/pm-standup` (or other `/pm-*`) not in `/help` | `.claude/skills/` missing or not committed in the PM docs repo | Copy skills manually: `cp -r /path/to/bitkub-pm-skills/skills/. .claude/skills/` then `git add .claude/ && git commit && git push`. |

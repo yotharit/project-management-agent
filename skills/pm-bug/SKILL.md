@@ -23,24 +23,38 @@ When a new member is registered, create a branch and MR. Confirm with user first
 ```bash
 git status
 git checkout develop && git pull origin develop
-git checkout -b chore/team-register-<gitlab_username>
+git checkout -b chore/team-register-<username>
 git add team.yaml
 git commit -m "chore(team): register <display_name>"
-git push origin chore/team-register-<gitlab_username>
+git push origin chore/team-register-<username>
 ```
 
-Then create MR:
+Then create MR/PR:
+
+**GitLab:**
 ```
 POST /projects/:id/merge_requests
 {
-  "source_branch": "chore/team-register-<gitlab_username>",
+  "source_branch": "chore/team-register-<username>",
   "target_branch": "develop",
   "title": "chore(team): register <display_name>",
   "description": "New team member self-registration via /pm-bug.",
   "remove_source_branch": true
 }
 ```
-Report MR URL. **Do NOT merge the MR yourself.**
+
+**GitHub:**
+```
+POST /repos/:owner/:repo/pulls
+{
+  "head": "chore/team-register-<username>",
+  "base": "develop",
+  "title": "chore(team): register <display_name>",
+  "body": "New team member self-registration via /pm-bug."
+}
+```
+
+Report MR/PR URL. **Do NOT merge the MR/PR yourself.**
 
 ---
 
@@ -56,21 +70,25 @@ Report MR URL. **Do NOT merge the MR yourself.**
 
 ## Identity & Config Resolution (run once per session)
 
-1. Read `.env` at project root — parse as `KEY=value` text lines (not shell env). Extract `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN`.
-2. Read `team.yaml` → find the member where `gitlab_username` matches. Use `display_name` and `role` for this session. This becomes the default QA reporter when opening defects.
-3. If `.env` is missing or `GITLAB_USERNAME` is blank → ask once. Suggest copying `.env.example` to `.env`.
+1. Read `.env` at project root — parse as `KEY=value` text lines. Extract `GIT_PROVIDER` (default: `gitlab`).
+   - `gitlab`: load `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN`
+   - `github`: load `GITHUB_USERNAME`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_TOKEN`
+   See `knowledge/git-provider.md` for auth headers and endpoint formats.
+2. Read `team.yaml` → find the member where `username` matches the active USERNAME. Use `display_name` and `role`. This becomes the default QA reporter when opening defects.
+3. If `.env` is missing or USERNAME is blank → ask once. Suggest copying `.env.example` to `.env`.
 4. **Self-registration:** If user is not found in `team.yaml` → ask for `display_name` and `role`. Append to `team.yaml`, show diff, confirm before writing.
 5. Role updates happen only on explicit command. Never infer from behavior.
 6. Never repeat identity resolution in the same session.
 
-## GitLab API — Config
+## Issues API — Config
 
-Values are read from `.env` (see Identity & Config Resolution above).
+Values are from `.env`. See `knowledge/git-provider.md` for endpoints and auth.
 
-User ID lookup (needed for assignee_ids):
+**Assignee ID lookup (GitLab only — not needed for GitHub):**
 ```
-GET /users?username=<username>
+GET /users?username=<gitlab_username>  →  use returned .id for assignee_ids
 ```
+GitHub uses `"assignees": ["username"]` directly — no lookup needed.
 
 ---
 
@@ -102,6 +120,7 @@ Collect from user:
 
 Confirm the row, then create:
 
+**GitLab:**
 ```
 POST /projects/:id/issues
 {
@@ -113,6 +132,18 @@ POST /projects/:id/issues
 }
 ```
 
+**GitHub:**
+```
+POST /repos/:owner/:repo/issues
+{
+  "title":     "<title>",
+  "body":      "<defect template content>",
+  "labels":    ["Kind: Working Item", "Group: Defects", "Type: BUG", "Priority: <priority>", "Platform: <platform>", "Dev Status: Todo", "QA Status: Pending Retest"],
+  "assignees": ["<dev_github_username>"],
+  "milestone": <release_milestone_number>
+}
+```
+
 Display created issue details for confirmation before import.
 
 ---
@@ -121,10 +152,8 @@ Display created issue details for confirmation before import.
 
 **Trigger:** "I'm picking up defect #<iid>", "Start working on bug #<iid>"
 
-```
-PUT /projects/:id/issues/:iid
-{ "labels": "<replace 'Dev Status: Todo' with 'Dev Status: Working on it'>" }
-```
+[GitLab] `PUT /projects/:id/issues/:iid { "labels": "<replace 'Dev Status: Todo' → 'Dev Status: Working on it'>" }`
+[GitHub] `PATCH /repos/:owner/:repo/issues/:number { "labels": [...updated label array...] }`
 
 ---
 
@@ -132,10 +161,8 @@ PUT /projects/:id/issues/:iid
 
 **Trigger:** "Defect #<iid> ready for QA", "Bug #<iid> fixed, send to QA"
 
-```
-PUT /projects/:id/issues/:iid
-{ "labels": "<replace 'Dev Status: Working on it' → 'Dev Status: Ready for QA', 'QA Status: Pending Retest' → 'QA Status: In Retest'>" }
-```
+[GitLab] `PUT /projects/:id/issues/:iid { "labels": "<replace 'Dev Status: Working on it' → 'Dev Status: Ready for QA', 'QA Status: Pending Retest' → 'QA Status: In Retest'>" }`
+[GitHub] `PATCH /repos/:owner/:repo/issues/:number { "labels": [...updated label array...] }`
 
 ---
 
@@ -143,12 +170,16 @@ PUT /projects/:id/issues/:iid
 
 **Trigger:** "Defect #<iid> passed QA", "Bug #<iid> verified fixed"
 
+[GitLab]
 ```
 PUT /projects/:id/issues/:iid
-{
-  "labels":      "<replace 'Dev Status: Ready for QA' → 'Dev Status: Done', 'QA Status: In Retest' → 'QA Status: Pass'>",
-  "state_event": "close"
-}
+{ "labels": "<replace 'Dev Status: Ready for QA' → 'Dev Status: Done', 'QA Status: In Retest' → 'QA Status: Pass'>", "state_event": "close" }
+```
+
+[GitHub]
+```
+PATCH /repos/:owner/:repo/issues/:number
+{ "labels": [...updated label array...], "state": "closed" }
 ```
 
 ---
@@ -157,16 +188,13 @@ PUT /projects/:id/issues/:iid
 
 **Trigger:** "Defect #<iid> failed retest", "Bug #<iid> still broken"
 
-```
-PUT /projects/:id/issues/:iid
-{ "labels": "<replace 'Dev Status: Ready for QA' → 'Dev Status: Todo', 'QA Status: In Retest' → 'QA Status: Fail'>" }
-```
+[GitLab] `PUT /projects/:id/issues/:iid { "labels": "<replace 'Dev Status: Ready for QA' → 'Dev Status: Todo', 'QA Status: In Retest' → 'QA Status: Fail'>" }`
+[GitHub] `PATCH /repos/:owner/:repo/issues/:number { "labels": [...updated label array...] }`
 
 Append failure notes:
-```
-POST /projects/:id/issues/:iid/notes
-{ "body": "**Retest Fail — <YYYY-MM-DD>** — <failure detail> (@<qa_username>)" }
-```
+
+[GitLab] `POST /projects/:id/issues/:iid/notes { "body": "**Retest Fail — <YYYY-MM-DD>** — <failure detail> (@<qa_username>)" }`
+[GitHub] `POST /repos/:owner/:repo/issues/:number/comments { "body": "**Retest Fail — <YYYY-MM-DD>** — <failure detail> (@<qa_username>)" }`
 
 ---
 

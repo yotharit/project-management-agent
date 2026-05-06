@@ -25,9 +25,11 @@ Feature: $ARGUMENTS
 
 ## Gitflow Management
 
-All PRD file writes go through a feature branch → MR → `develop`. QA tests PM artifacts on `develop`. The `develop` → `main` merge is a separate PM gate — the agent never triggers it.
+All PRD file writes go through a feature branch → MR/PR → `develop`. QA tests PM artifacts on `develop`. The `develop` → `main` merge is a separate PM gate — the agent never triggers it.
 
-**Confirm with user before every `push` and MR creation.**
+Read `GIT_PROVIDER` from `.env` (default: `gitlab`). See `knowledge/git-provider.md` for auth headers and endpoint formats.
+
+**Confirm with user before every `push` and MR/PR creation.**
 
 ### Branch setup — run once per session, before first write
 ```bash
@@ -43,7 +45,9 @@ git commit -m "prd(<feature-slug>): <draft|revise> v<version> — <brief change>
 git push origin prd/<feature-slug>
 ```
 
-### On first push — create GitLab MR targeting `develop` (confirm first)
+### On first push — create MR/PR targeting `develop` (confirm first)
+
+**GitLab:**
 ```
 POST /projects/:id/merge_requests
 {
@@ -54,7 +58,19 @@ POST /projects/:id/merge_requests
   "remove_source_branch": true
 }
 ```
-Report MR URL to user.
+
+**GitHub:**
+```
+POST /repos/:owner/:repo/pulls
+{
+  "head": "prd/<feature-slug>",
+  "base": "develop",
+  "title": "PRD: <Feature Name> — v<version> review",
+  "body": "File: `prd/<feature-slug>.md`\nVersion: <version>\nFeature Owner: @<owner>\n\nReview using `.github/pull_request_template.md`."
+}
+```
+
+Report MR/PR URL to user.
 
 ### On PRD approval (version 1.0, status approved)
 ```bash
@@ -62,8 +78,8 @@ git add prd/<feature-slug>.md
 git commit -m "prd(<feature-slug>): approve v1.0"
 git push origin prd/<feature-slug>
 ```
-Remind user: "PRD v1.0 pushed to branch. Merge the MR into `develop` so QA can validate. After QA sign-off, `develop` → `main` locks the PRD."
-**Do NOT merge the MR yourself** — merge is the team's explicit approval gate.
+Remind user: "PRD v1.0 pushed to branch. Merge the MR/PR into `develop` so QA can validate. After QA sign-off, `develop` → `main` locks the PRD."
+**Do NOT merge the MR/PR yourself** — merge is the team's explicit approval gate.
 
 ---
 
@@ -144,7 +160,7 @@ Read the **approved** PRD only. Do NOT re-read RFC/grooming/kickoff at this stag
 
 ### Stage 4 — Apply Breakdown
 
-**Trigger:** "Apply the breakdown", "Create GitLab issues" — handled by `/pm-breakdown`.
+**Trigger:** "Apply the breakdown", "Create issues" — handled by `/pm-breakdown`.
 
 ---
 

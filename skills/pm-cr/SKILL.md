@@ -58,7 +58,9 @@ git commit -m "cr(<feature-slug>-<NNN>): apply — revise PRD to v<N>"
 git push origin cr/<feature-slug>-<NNN>
 ```
 
-### After Stage 4 is complete — create MR (confirm first)
+### After Stage 4 is complete — create MR/PR (confirm first)
+
+**GitLab:**
 ```
 POST /projects/:id/merge_requests
 {
@@ -69,8 +71,20 @@ POST /projects/:id/merge_requests
   "remove_source_branch": true
 }
 ```
-Report MR URL. Remind user: "Merge into `develop` so QA can validate. After sign-off, `develop` → `main` finalises the CR."
-**Do NOT merge the MR yourself.**
+
+**GitHub:**
+```
+POST /repos/:owner/:repo/pulls
+{
+  "head": "cr/<feature-slug>-<NNN>",
+  "base": "develop",
+  "title": "CR: <cr.title> (<cr.id>)",
+  "body": "Change request applied.\nSource: `cr/<feature-slug>-<NNN>.yaml`\nStatus: implemented"
+}
+```
+
+Report MR/PR URL. Remind user: "Merge into `develop` so QA can validate. After sign-off, `develop` → `main` finalises the CR."
+**Do NOT merge the MR/PR yourself.**
 
 ---
 
@@ -190,8 +204,9 @@ Two paths based on `impact.prd_change_needed`:
 
 ### Path B — No PRD change, new items only
 
-Create GitLab issues directly:
+Create issues directly:
 
+**GitLab:**
 ```
 POST /projects/:id/issues
 {
@@ -199,6 +214,17 @@ POST /projects/:id/issues
   "description": "CR: <cr.id> — <cr.title>\nRequested by: <cr.requested_by>\n\n<working_item description>\n\nSource: cr/<feature>-<NNN>.yaml",
   "labels":      "Kind: Working Item,Group: <group>,Priority: <priority>,Type: CR,Platform: <platform>,Status: Todo",
   "milestone_id": <id>
+}
+```
+
+**GitHub:**
+```
+POST /repos/:owner/:repo/issues
+{
+  "title":     "<working_item.name>",
+  "body":      "CR: <cr.id> — <cr.title>\nRequested by: <cr.requested_by>\n\n<working_item description>\n\nSource: cr/<feature>-<NNN>.yaml",
+  "labels":    ["Kind: Working Item", "Group: <group>", "Priority: <priority>", "Type: CR", "Platform: <platform>", "Status: Todo"],
+  "milestone": <number>
 }
 ```
 
@@ -226,16 +252,19 @@ For both paths:
 
 ## Identity & Config Resolution (run once per session)
 
-1. Read `.env` at project root — parse as `KEY=value` text lines (not shell env). Extract `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN`.
-2. Read `team.yaml` → find the member where `gitlab_username` matches. Use `display_name` and `role` for this session. `display_name` becomes the default `requested_by` and `decision.by`.
-3. If `.env` is missing or `GITLAB_USERNAME` is blank → ask once. Suggest copying `.env.example` to `.env`.
+1. Read `.env` at project root — parse as `KEY=value` text lines. Extract `GIT_PROVIDER` (default: `gitlab`).
+   - `gitlab`: load `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN`
+   - `github`: load `GITHUB_USERNAME`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_TOKEN`
+   See `knowledge/git-provider.md` for auth headers and endpoint formats.
+2. Read `team.yaml` → find the member where `username` matches the active USERNAME. Use `display_name` and `role`. `display_name` becomes the default `requested_by` and `decision.by`.
+3. If `.env` is missing or USERNAME is blank → ask once. Suggest copying `.env.example` to `.env`.
 4. **Self-registration:** If user is not found in `team.yaml` → ask for `display_name` and `role`. Append to `team.yaml`, show diff, confirm before writing.
 5. Role updates happen only on explicit command. Never infer from behavior.
 6. Never repeat identity resolution in the same session.
 
-## GitLab API — Config
+## Issues API — Config
 
-Values are read from `.env` (see Identity & Config Resolution above).
+Values are from `.env`. See `knowledge/git-provider.md` for endpoints and auth.
 
 ---
 

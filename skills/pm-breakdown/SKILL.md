@@ -1,6 +1,6 @@
 ---
 name: pm-breakdown
-description: Break down an approved PRD into Working Items (GitLab Issues) grouped by component — Client, Service, Smart Contract, Chain, QA
+description: Break down an approved PRD into Working Items (Issues) grouped by component — Client, Service, Smart Contract, Chain, QA
 argument-hint: <feature-slug>
 allowed-tools: [Read, Write, Edit, Glob, Bash]
 version: 1.1.0
@@ -57,31 +57,48 @@ git commit -m "breakdown(<feature-slug>): approve v1.0 — apply to GitLab issue
 git push origin breakdown/<feature-slug>
 ```
 
-### After all GitLab issues are created — create MR (confirm first)
+### After all issues are created — create MR/PR (confirm first)
+
+**GitLab:**
 ```
 POST /projects/:id/merge_requests
 {
   "source_branch": "breakdown/<feature-slug>",
   "target_branch": "develop",
   "title": "Breakdown: <Feature Name> — v1.0 applied",
-  "description": "Working Items created in GitLab.\nYAML archived: `breakdown/<feature-slug>_v1.0.yaml`",
+  "description": "Working Items created.\nYAML archived: `breakdown/<feature-slug>_v1.0.yaml`",
   "remove_source_branch": true
 }
 ```
-Report MR URL. Remind user: "Merge into `develop` so QA can validate the issue set. After sign-off, `develop` → `main` archives the breakdown."
-**Do NOT merge the MR yourself.**
+
+**GitHub:**
+```
+POST /repos/:owner/:repo/pulls
+{
+  "head": "breakdown/<feature-slug>",
+  "base": "develop",
+  "title": "Breakdown: <Feature Name> — v1.0 applied",
+  "body": "Working Items created.\nYAML archived: `breakdown/<feature-slug>_v1.0.yaml`"
+}
+```
+
+Report MR/PR URL. Remind user: "Merge into `develop` so QA can validate the issue set. After sign-off, `develop` → `main` archives the breakdown."
+**Do NOT merge the MR/PR yourself.**
 
 ---
 
 ## Config Resolution (run once per session)
 
-1. Read `.env` at project root — parse as `KEY=value` text lines (not shell env). Extract `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN`.
-2. If `.env` is missing or any value is blank → ask once. Suggest copying `.env.example` to `.env`.
+1. Read `.env` at project root — parse as `KEY=value` text lines. Extract `GIT_PROVIDER` (default: `gitlab`).
+   - `gitlab`: load `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN`
+   - `github`: load `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`
+   See `knowledge/git-provider.md` for auth headers and endpoint formats.
+2. If `.env` is missing or any required value is blank → ask once. Suggest copying `.env.example` to `.env`.
 3. Never ask again within the same session.
 
-## GitLab API — Config
+## Issues API — Config
 
-Values are read from `.env` (see Config Resolution above).
+Values are from `.env`. See `knowledge/git-provider.md` for endpoints and auth.
 
 ---
 
@@ -135,21 +152,33 @@ During review, edit the YAML in place. On approval: version → `1.0`, status �
 
 ---
 
-## Stage 4 — Apply Breakdown (Create GitLab Issues)
+## Stage 4 — Apply Breakdown (Create Issues)
 
-**Trigger:** "Apply the breakdown", "Create GitLab issues", after YAML is approved.
+**Trigger:** "Apply the breakdown", "Create issues", after YAML is approved.
 
 Steps:
 1. Set YAML: `version: 1.0`, `status: approved`. Archive as `breakdown/<feature-slug>_v1.0.yaml` (immutable).
-2. For each Working Item, create a GitLab issue:
+2. For each Working Item, create an issue:
 
+**GitLab:**
 ```
 POST /projects/:id/issues
 {
   "title":       "<working_item.name>",
   "description": "<working_item.description>\n\nSource: prd/<feature>.md v1.0 | Plan: breakdown/<feature>_v1.0.yaml",
   "labels":      "Kind: Working Item,Group: <group>,Priority: <priority>,Type: <type>,Platform: <platform>,Status: Todo",
-  "milestone_id": <id>   // null if release blank
+  "milestone_id": <id>
+}
+```
+
+**GitHub:**
+```
+POST /repos/:owner/:repo/issues
+{
+  "title":     "<working_item.name>",
+  "body":      "<working_item.description>\n\nSource: prd/<feature>.md v1.0 | Plan: breakdown/<feature>_v1.0.yaml",
+  "labels":    ["Kind: Working Item", "Group: <group>", "Priority: <priority>", "Type: <type>", "Platform: <platform>", "Status: Todo"],
+  "milestone": <number>
 }
 ```
 
@@ -158,9 +187,17 @@ POST /projects/:id/issues
 5. Tasks (subitems) are NOT created here — Dev/QA create their own under Working Items.
 
 ### Milestone lookup / creation
+
+**GitLab:**
 ```
 GET /projects/:id/milestones?search=<release>&per_page=20
 POST /projects/:id/milestones { "title": "<release>", "due_date": "YYYY-MM-DD" }
+```
+
+**GitHub:**
+```
+GET /repos/:owner/:repo/milestones      # filter client-side by .title
+POST /repos/:owner/:repo/milestones { "title": "<release>", "due_on": "YYYY-MM-DDT00:00:00Z" }
 ```
 
 ### YAML field → GitLab label mapping

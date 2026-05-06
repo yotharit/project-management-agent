@@ -14,10 +14,13 @@ User: $ARGUMENTS (blank = resolve from `.env`)
 
 ## Identity & Config Resolution (run once per session)
 
-1. Read `.env` at project root — parse as `KEY=value` text lines (not shell env). Extract `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN`.
-2. Read `team.yaml` → find the member where `gitlab_username` matches. Use `display_name` and `role` for this session.
-3. If argument is provided, use it as `GITLAB_USERNAME` directly (overrides `.env`).
-4. If `.env` is missing or `GITLAB_USERNAME` is blank → ask once. Suggest copying `.env.example` to `.env`.
+1. Read `.env` at project root — parse as `KEY=value` text lines. Extract `GIT_PROVIDER` (default: `gitlab`).
+   - `gitlab`: load `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN`
+   - `github`: load `GITHUB_USERNAME`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_TOKEN`
+   See `knowledge/git-provider.md` for auth headers and endpoint formats.
+2. Read `team.yaml` → find the member where `username` matches the active USERNAME. Use `display_name` and `role`.
+3. If argument is provided, use it as the active USERNAME directly (overrides `.env`).
+4. If `.env` is missing or USERNAME is blank → ask once. Suggest copying `.env.example` to `.env`.
 5. **Self-registration:** If user is not found in `team.yaml` → ask for `display_name` and `role`. Append the new entry to `team.yaml`, show the diff, confirm before writing.
 6. Role updates happen only on explicit command ("update my role to PO"). Never infer from behavior.
 7. Never repeat identity resolution in the same session.
@@ -51,7 +54,9 @@ git commit -m "standup: <YYYY-MM-DD> — <username> + register <display_name>"
 git push origin standup/<YYYY-MM-DD>
 ```
 
-### Create MR (confirm first)
+### Create MR/PR (confirm first)
+
+**GitLab:**
 ```
 POST /projects/:id/merge_requests
 {
@@ -62,7 +67,19 @@ POST /projects/:id/merge_requests
   "remove_source_branch": true
 }
 ```
-Report MR URL. **Do NOT merge the MR yourself.**
+
+**GitHub:**
+```
+POST /repos/:owner/:repo/pulls
+{
+  "head": "standup/<YYYY-MM-DD>",
+  "base": "develop",
+  "title": "Standup: <YYYY-MM-DD>",
+  "body": "Daily standup log for <YYYY-MM-DD>."
+}
+```
+
+Report MR/PR URL. **Do NOT merge the MR/PR yourself.**
 
 ---
 
@@ -76,31 +93,31 @@ Report MR URL. **Do NOT merge the MR yourself.**
 
 ---
 
-## GitLab API — Read/Write (replaces XLSX)
+## Issues API — Read/Write
 
-Config values are read from `.env` (see Identity & Config Resolution above).
+Config values and endpoints are from `.env` and `knowledge/git-provider.md`.
 
 **Read tasks for a user:**
-```
-GET /projects/:id/issues?assignee_username=<user>&labels=Kind: Task&state=opened&per_page=100
-```
+
+[GitLab] `GET /projects/:id/issues?assignee_username=<user>&labels=Kind: Task&state=opened&per_page=100`
+[GitHub] `GET /repos/:owner/:repo/issues?assignee=<user>&labels=Kind%3A+Task&state=open&per_page=100`
+
 Filter out issues carrying `Status: Done` or `Status: Declined` labels.
 
 **Update task status (replace label):**
-```
-PUT /projects/:id/issues/:iid
-{ "labels": "<existing labels with old Status:* removed, new Status:* added>" }
-```
-Label replacement rule: split on `,`, drop entries starting with `Status: `, append `Status: <new>`, re-join.
 
-**Append standup log as note:**
-```
-POST /projects/:id/issues/:iid/notes
-{ "body": "**Standup <YYYY-MM-DD>** — Yesterday: <...> | Today: <...> | Blockers: <...> | Status: <old> → <new>" }
-```
+[GitLab] `PUT /projects/:id/issues/:iid { "labels": "<old labels with Status:* replaced>" }`
+[GitHub] `PATCH /repos/:owner/:repo/issues/:number { "labels": ["...updated label array..."] }`
+
+Label replacement rule: remove entries starting with `Status: `, append `Status: <new>`. Re-join as comma-string (GitLab) or array (GitHub).
+
+**Append standup log as note/comment:**
+
+[GitLab] `POST /projects/:id/issues/:iid/notes { "body": "**Standup <YYYY-MM-DD>** — Yesterday: <...> | Today: <...> | Blockers: <...> | Status: <old> → <new>" }`
+[GitHub] `POST /repos/:owner/:repo/issues/:number/comments { "body": "**Standup <YYYY-MM-DD>** — Yesterday: <...> | Today: <...> | Blockers: <...> | Status: <old> → <new>" }`
 
 **Recompute parent WI status:**
-Parse `Part of #<wi_iid>` from each updated task's description. Fetch all child tasks of that WI. Apply rollup rules below. Update WI labels via PUT.
+Parse `Part of #<wi_iid>` from each updated task's description. Fetch all child tasks of that WI. Apply rollup rules below. Update WI labels via PUT/PATCH.
 
 **WI status rollup rules:**
 
@@ -174,9 +191,10 @@ standup:
 **Trigger:** "Generate today's standup", "Daily report", "Standup report"
 
 Read all open Task issues:
-```
-GET /projects/:id/issues?labels=Kind: Task&state=opened&per_page=100
-```
+
+[GitLab] `GET /projects/:id/issues?labels=Kind: Task&state=opened&per_page=100`
+[GitHub] `GET /repos/:owner/:repo/issues?labels=Kind%3A+Task&state=open&per_page=100`
+
 For each issue, read the latest note starting with `**Standup` to extract yesterday/today/blockers.
 Group by assignee. Output `daily-standup/<date>.md`:
 
@@ -210,10 +228,10 @@ Roadblocks come first — that is the standup's primary focus.
 
 **Trigger:** "What's the status of <feature>?", "Show <person>'s tasks", "Where are we on #42?"
 
-| Query | API call |
-|---|---|
-| Feature/keyword | `GET /projects/:id/issues?search=<keyword>&per_page=20` |
-| Person's tasks | `GET /projects/:id/issues?assignee_username=<user>&state=opened&per_page=50` |
-| Specific issue | `GET /projects/:id/issues/<iid>` |
+| Query | GitLab | GitHub |
+|---|---|---|
+| Feature/keyword | `GET /projects/:id/issues?search=<kw>&per_page=20` | `GET /repos/:owner/:repo/issues?q=<kw>&per_page=20` |
+| Person's tasks | `GET /projects/:id/issues?assignee_username=<u>&state=opened&per_page=50` | `GET /repos/:owner/:repo/issues?assignee=<u>&state=open&per_page=50` |
+| Specific issue | `GET /projects/:id/issues/<iid>` | `GET /repos/:owner/:repo/issues/<number>` |
 
 Always recompute WI status from children before displaying. Return compact markdown table. No file output.

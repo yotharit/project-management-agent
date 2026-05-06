@@ -1,7 +1,7 @@
 # KUB Wallet PM Agent — Claude Code Plugin
 
 IT Project Management Agent for software projects (Web, Mobile, Blockchain, Smart Contract).
-Covers PRD generation, sprint breakdown, daily standup, defect tracking, and change requests — all via GitLab Issues.
+Covers PRD generation, sprint breakdown, daily standup, defect tracking, and change requests — all via GitLab or GitHub Issues.
 
 ---
 
@@ -11,8 +11,8 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
 
 1. [Prerequisites](#1-prerequisites)
 2. [Install the Plugin](#2-install-the-plugin)
-3. [One-time GitLab Setup](#3-one-time-gitlab-setup)
-4. [Configure Identity & GitLab Credentials](#4-configure-identity--gitlab-credentials)
+3. [One-time Git Provider Setup](#3-one-time-git-provider-setup)
+4. [Configure Identity & Credentials](#4-configure-identity--credentials)
 5. [How to Use](#5-how-to-use)
    - [/pm-setup — Repository Setup](#pm-setup--repository-setup)
    - [Auto-trigger (pm-agent)](#auto-trigger--pm-agent)
@@ -32,9 +32,9 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
 | Requirement | Notes |
 |---|---|
 | Claude Code CLI | `npm install -g @anthropic-ai/claude-code` |
-| Self-hosted GitLab | Free tier or above |
-| GitLab Personal Access Token | Scope: `api` — Profile → Access Tokens |
-| A GitLab project for PM docs | e.g. `kub-wallet-pm` |
+| GitLab **or** GitHub | GitLab: self-hosted, Free tier or above. GitHub: any plan |
+| Personal Access Token | GitLab: scope `api` — Profile → Access Tokens. GitHub: scope `repo` — Settings → Developer settings |
+| A project for PM docs | e.g. `kub-wallet-pm` — GitLab or GitHub |
 
 ---
 
@@ -66,18 +66,19 @@ After installing the plugin, open Claude Code **in your PM docs repo** and run:
 /pm-setup
 ```
 
-This sets up folders, GitLab labels, templates, `team.yaml`, and the `develop` branch in one guided flow. See §3 for what it automates and what still requires the GitLab web UI.
+This sets up folders, labels, templates, `team.yaml`, and the `develop` branch in one guided flow. See §3 for what it automates and what still requires the provider web UI.
 
 ---
 
-## 3. One-time GitLab Setup
+## 3. One-time Git Provider Setup
 
 Do this once when setting up the project board. Skip if already done.
 
 ### 3a. Create the PM docs repo
 
-Create a new GitLab repo (e.g. `kub-wallet-pm`) with this folder structure:
+Create a new repo (e.g. `kub-wallet-pm`) with this folder structure:
 
+**GitLab:**
 ```
 kub-wallet-pm/
 ├── rfc/
@@ -92,25 +93,54 @@ kub-wallet-pm/
     └── merge_request_templates/
 ```
 
-### 3b. Deploy issue and MR templates
+**GitHub:**
+```
+kub-wallet-pm/
+├── rfc/
+├── grooming/
+├── kickoff/
+├── prd/
+├── breakdown/
+├── cr/
+├── daily-standup/
+└── .github/
+    └── ISSUE_TEMPLATE/
+```
+
+### 3b. Deploy issue templates
 
 Copy from this plugin repo into your PM docs repo (replace `$PLUGIN` and `$PM_REPO`):
 
+**GitLab:**
 ```bash
-cp "$PLUGIN/gitlab/templates/issue/"*.md       "$PM_REPO/.gitlab/issue_templates/"
+cp "$PLUGIN/gitlab/templates/issue/"*.md          "$PM_REPO/.gitlab/issue_templates/"
 cp "$PLUGIN/gitlab/templates/merge_request/"*.md  "$PM_REPO/.gitlab/merge_request_templates/"
+```
+
+**GitHub:**
+```bash
+cp "$PLUGIN/gitlab/templates/issue/"*.md  "$PM_REPO/.github/ISSUE_TEMPLATE/"
 ```
 
 ### 3c. Create all labels (bulk script)
 
-Replace `<host>`, `<project_id>`, and `<token>`, then run the script from `gitlab/repo-structure.md`:
+See `knowledge/git-provider.md` for the label creation API for both providers.
 
+**GitLab** — replace `<host>`, `<project_id>`, and `<token>`:
 ```bash
 GITLAB="https://<host>/api/v4"
 PROJECT=<project_id>
 TOKEN=<your_token>
 
 # Copy and run the full create_label block from gitlab/repo-structure.md
+```
+
+**GitHub** — replace `<owner>`, `<repo>`, and `<token>`:
+```bash
+GH_OWNER=<owner>; GH_REPO=<repo>; TOKEN=<your_token>
+
+# POST /repos/$GH_OWNER/$GH_REPO/labels — {"name":"...", "color":"xxxxxx"} (no # in color)
+# See knowledge/git-provider.md for the full label list
 ```
 
 This creates all 38 labels: `Kind:*`, `Status:*`, `Priority:*`, `Type:*`, `Platform:*`, `Group:*`, `Dev Status:*`, `QA Status:*`.
@@ -147,7 +177,7 @@ Create a separate board named `Defects` filtered on `Group: Defects`.
 
 ---
 
-## 4. Configure Identity & GitLab Credentials
+## 4. Configure Identity & Credentials
 
 The agent reads credentials and team identity from two files in your project root — no need to tell Claude each session.
 
@@ -164,7 +194,7 @@ team:
   project: Your Project Name
   members:
     - display_name: Yo Tharit
-      gitlab_username: yo.tharit
+      username: yo.tharit
       role: PM          # PM | PO | Dev | QA | SM | DevOps
       email: yo.tharit@bitkub.com
 ```
@@ -180,10 +210,19 @@ cp <plugin-path>/.env.example .env
 ```
 
 ```env
+GIT_PROVIDER=gitlab            # gitlab | github
+
+# GitLab (used when GIT_PROVIDER=gitlab)
 GITLAB_USERNAME=your.gitlab.username
 GITLAB_BASE_URL=https://gitlab.bitkub.com/api/v4
 GITLAB_PROJECT_ID=123          # Settings → General → Project ID
 GITLAB_TOKEN=glpat-xxxx        # Profile → Access Tokens (scope: api)
+
+# GitHub (used when GIT_PROVIDER=github)
+# GITHUB_USERNAME=your.github.username
+# GITHUB_OWNER=org-or-username
+# GITHUB_REPO=repo-name
+# GITHUB_TOKEN=ghp_xxxx        # Settings → Developer settings (scope: repo)
 ```
 
 `.env` is gitignored. Each team member keeps their own copy with their own token.
@@ -202,7 +241,7 @@ Run once per PM docs repository after installing the plugin.
 /pm-setup
 ```
 
-Automates: folders, GitLab labels (38), issue/MR templates, `team.yaml`, `develop` branch, commit & push. Prints a checklist of the remaining manual GitLab UI steps (Issue Board, Milestones, Branch Protection).
+Automates: folders, labels (38), issue/MR templates, `team.yaml`, `develop` branch, commit & push. Prints a checklist of the remaining manual provider UI steps (Issue Board, Milestones, Branch Protection).
 
 ---
 
@@ -219,7 +258,7 @@ You do not need a slash command for general PM conversations. The `pm-agent` ski
 "Is the PRD for registration approved?"
 ```
 
-The agent reads from GitLab, applies the status rollup rules, and responds with accurate board state.
+The agent reads from the issue tracker, applies the status rollup rules, and responds with accurate board state.
 
 **Pick up a task (agent handles Gitflow suggestion automatically):**
 ```
@@ -227,7 +266,7 @@ The agent reads from GitLab, applies the status rollup rules, and responds with 
 "Assign me to #42"
 ```
 The agent:
-1. Fetches live issue status from GitLab — warns if already picked up or closed
+1. Fetches live issue status — warns if already picked up or closed
 2. Updates labels: `Status: Working on it` + assignee
 3. Posts a comment on the issue with:
    - **Branch name** ready to use: `feature/42-implement-wallet-progress-bar`
@@ -274,7 +313,7 @@ Sets `version: 1.0`, `status: approved`. PRD is now locked — no silent regener
 
 ### /pm-breakdown — Feature Breakdown
 
-Covers: propose Working Items from approved PRD → review YAML → create GitLab Issues.
+Covers: propose Working Items from approved PRD → review YAML → create Issues.
 
 > PRD must be approved before breakdown can start.
 
@@ -289,13 +328,13 @@ The agent reads `prd/transaction-limit.md` (approved), proposes a YAML grouped b
 > Breakdown approved
 ```
 
-**Create GitLab Issues:**
+**Create Issues:**
 ```
 > Apply the breakdown
 ```
 The agent:
 1. Archives `breakdown/transaction-limit_v1.0.yaml`
-2. Creates one GitLab Issue per Working Item with the correct labels and milestone
+2. Creates one issue per Working Item with the correct labels and milestone
 3. Displays all created issues as a markdown table for verification
 
 **Dev/QA create Tasks** (child issues) under each Working Item after import — the agent does not create Tasks at this stage.
@@ -314,7 +353,7 @@ Three modes: solo update, team report, quick query.
 /pm-standup yo.tharit
 ```
 
-The agent fetches your open Tasks from GitLab and presents a YAML for you to fill in:
+The agent fetches your open Tasks from the issue tracker and presents a YAML for you to fill in:
 
 ```yaml
 standup:
@@ -332,7 +371,7 @@ standup:
 ```
 
 Fill it in, confirm, and the agent:
-- **Fetches live issue status** from GitLab before each update — warns if status has drifted from what you entered
+- **Fetches live issue status** from the issue tracker before each update — warns if status has drifted from what you entered
 - Updates the `Status:*` label on each task in GitLab
 - Posts a standup note on each issue
 - **First pick-up detection:** if task moves from `Todo`/`Ready to Start` → `Working on it`, also posts branch name + Claude Code prompt on the issue
@@ -385,7 +424,7 @@ The agent asks for:
 - Dev assignee
 - QA reporter (defaults to you)
 
-Confirms the row, then creates a GitLab Issue in `Group: Defects` with `Dev Status: Todo` and `QA Status: Pending Retest`.
+Confirms the row, then creates an issue in `Group: Defects` with `Dev Status: Todo` and `QA Status: Pending Retest`.
 
 **Dev picks up:**
 ```
@@ -446,7 +485,7 @@ The agent reads the affected PRD, identifies which sections/FRs are impacted, de
 
 *Path A: PRD change required* — agent revises the PRD (bumps to `v1.1`), cites each change as `[CR-transaction-limit-001 2026-04-29]`, presents diff for approval, then triggers `/pm-breakdown` for any new Working Items.
 
-*Path B: New items only, no PRD change* — agent creates GitLab Issues directly with `Type: CR` label, linking back to the CR YAML.
+*Path B: New items only, no PRD change* — agent creates issues directly with `Type: CR` label, linking back to the CR YAML.
 
 **Gitflow:** `cr/<feature>-<NNN>` → commit each stage → push → MR → **`develop`** (QA validates) → MR → **`main`** (PM gate). Path A also commits PRD changes on the same branch.
 
@@ -537,11 +576,11 @@ kub-wallet-pm/
                     │  Breakdown  │  breakdown/<feature>_v0.1.yaml
                     │   YAML      │  commit → push → MR → develop
                     └──────┬──────┘
-                           │ "Apply breakdown" — GitLab Issues created
+                           │ "Apply breakdown" — Issues created
                            │ QA validates issue set on develop
                     ┌──────▼──────┐
-                    │  GitLab     │  Working Items with labels + milestone
-                    │  Issues     │  develop → main (PM gate)
+                    │  Issues     │  Working Items with labels + milestone
+                    │  (Board)    │  develop → main (PM gate)
                     └──────┬──────┘
                            │ Dev picks up task (via pm-agent / pm-standup)
                            │ Agent posts: branch feature/<iid>-<slug>
@@ -564,7 +603,7 @@ Stakeholder request
 └──────┬──────┘
        │ "Approve CR"
        ├─── prd_change_needed: true ──▶ revise PRD v1.1 (same branch) ──▶ /pm-breakdown
-       └─── prd_change_needed: false ─▶ GitLab Issues (Type: CR)
+       └─── prd_change_needed: false ─▶ Issues (Type: CR)
        │
        └── MR → develop (QA validates) → main (PM gate)
 ```
@@ -581,17 +620,17 @@ Stakeholder request
 
 ## 8. Gitflow Model
 
-All PM artifact writes follow a **branch-per-artifact → MR → `develop` → MR → `main`** model.
+All PM artifact writes follow a **branch-per-artifact → MR/PR → `develop` → MR/PR → `main`** model.
 
 ### Branch responsibilities
 
 | Who | Branch | Target | Gate |
 |---|---|---|---|
-| Agent | `prd/<feature>` | `develop` | Team reviews MR |
-| Agent | `breakdown/<feature>` | `develop` | Team reviews MR |
-| Agent | `cr/<feature>-<NNN>` | `develop` | Team reviews MR |
-| Agent | `standup/<YYYY-MM-DD>` | `develop` | Team reviews MR |
-| Agent | `chore/team-register-<username>` | `develop` | Team reviews MR |
+| Agent | `prd/<feature>` | `develop` | Team reviews MR/PR |
+| Agent | `breakdown/<feature>` | `develop` | Team reviews MR/PR |
+| Agent | `cr/<feature>-<NNN>` | `develop` | Team reviews MR/PR |
+| Agent | `standup/<YYYY-MM-DD>` | `develop` | Team reviews MR/PR |
+| Agent | `chore/team-register-<username>` | `develop` | Team reviews MR/PR |
 | PM/PO | `develop` | `main` | QA sign-off complete |
 | Dev | `feature/<iid>-<slug>` | (code repo) | Per code repo policy |
 
@@ -603,8 +642,10 @@ All PM artifact writes follow a **branch-per-artifact → MR → `develop` → M
 3. [write / edit file]
 4. git add <file> && git commit -m "<conventional message>"
 5. git push origin <branch-name>
-6. POST /projects/:id/merge_requests  (source → develop)
-   → report MR URL to user
+6. Create MR/PR targeting **develop**
+   [GitLab] POST /projects/:id/merge_requests
+   [GitHub] POST /repos/:owner/:repo/pulls
+   → report MR/PR URL to user
 7. Team reviews and merges MR into develop
 8. QA tests PM artifacts on develop  ← Dev Release
 9. PM/PO opens develop → main MR when QA signs off
@@ -622,7 +663,7 @@ All PM artifact writes follow a **branch-per-artifact → MR → `develop` → M
 
 ### Task pick-up (code repo branch — suggested by agent, not created)
 
-When a developer picks up a task, the agent posts on the GitLab issue:
+When a developer picks up a task, the agent posts on the issue:
 
 ```
 Branch:  feature/42-implement-wallet-progress-bar
@@ -640,7 +681,7 @@ The developer creates `feature/<iid>-<slug>` in the **code repository** per the 
 
 ### Hard constraints
 
-- Agent confirms with user before every `push` and MR creation
+- Agent confirms with user before every `push` and MR/PR creation
 - Agent never pushes directly to `develop` or `main`
-- Agent never merges any MR
-- Agent never creates the `develop` → `main` MR — that is the PM/PO gate action after QA sign-off
+- Agent never merges any MR/PR
+- Agent never creates the `develop` → `main` MR/PR — that is the PM/PO gate action after QA sign-off

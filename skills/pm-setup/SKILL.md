@@ -2,8 +2,9 @@
 name: pm-setup
 description: >
   Set up a PM docs repository after installing the plugin. Activates when the user runs
-  /pm-setup, or says "setup pm repo", "initialize pm project", "set up gitlab project
-  management", or "init pm agent". Works for both new and ongoing projects.
+  /pm-setup, or says "setup pm repo", "initialize pm project", "set up git project
+  management", or "init pm agent". Works for both new and ongoing projects, with
+  GitLab or GitHub as the issue/MR/PR provider (set via GIT_PROVIDER in .env).
 argument-hint: [new|ongoing]
 allowed-tools: [Read, Write, Edit, Glob, Bash]
 version: 1.0.0
@@ -41,42 +42,45 @@ Greet the user:
 
 ---
 
-## Phase 1 — GitLab Credentials
+## Phase 1 — Provider Credentials
 
 ### 1a. Read or create .env
 
-Check if `.env` exists at project root. Parse as `KEY=value` text lines. Extract:
-- `GITLAB_USERNAME`
-- `GITLAB_BASE_URL`
-- `GITLAB_PROJECT_ID`
-- `GITLAB_TOKEN`
+Check if `.env` exists at project root. Parse as `KEY=value` text lines. Extract `GIT_PROVIDER` (default: `gitlab`).
 
-If `.env` is missing → create it with these blank fields:
+If `.env` is missing → create from `.env.example` template. Ask user to confirm `GIT_PROVIDER` before continuing.
 
-```
-GITLAB_USERNAME=
-GITLAB_BASE_URL=https://gitlab.bitkub.com/api/v4
-GITLAB_PROJECT_ID=
-GITLAB_TOKEN=
-```
-
-For each blank value → ask the user once:
+**GitLab** — extract (and prompt if blank):
 - `GITLAB_USERNAME` — "Your GitLab username (e.g. yo.tharit)"
 - `GITLAB_BASE_URL` — "Your GitLab API base URL (e.g. https://gitlab.bitkub.com/api/v4)"
-- `GITLAB_PROJECT_ID` — "Your GitLab project ID — found at Settings → General → Project ID"
+- `GITLAB_PROJECT_ID` — "Your GitLab project ID — Settings → General → Project ID"
 - `GITLAB_TOKEN` — "Your Personal Access Token — Profile → Access Tokens, scope: api"
+
+**GitHub** — extract (and prompt if blank):
+- `GITHUB_USERNAME` — "Your GitHub username"
+- `GITHUB_OWNER` — "The repo owner (org or username)"
+- `GITHUB_REPO` — "The repository name"
+- `GITHUB_TOKEN` — "Your Personal Access Token — Settings → Developer settings → Fine-grained tokens, scopes: issues, pull_requests, contents"
 
 Write collected values to `.env`. Never ask again this session.
 
 ### 1b. Test connection
 
+**GitLab:**
 ```
 GET <GITLAB_BASE_URL>/projects/<GITLAB_PROJECT_ID>
 -H "PRIVATE-TOKEN: <GITLAB_TOKEN>"
 ```
+HTTP 200 → "✓ GitLab connection OK — project: `<name>`"
 
-- HTTP 200 → report: "✓ GitLab connection OK — project: `<name>`"
-- Error → report the exact HTTP status and message, stop, ask user to fix credentials before continuing.
+**GitHub:**
+```
+GET https://api.github.com/repos/<GITHUB_OWNER>/<GITHUB_REPO>
+-H "Authorization: Bearer <GITHUB_TOKEN>"
+```
+HTTP 200 → "✓ GitHub connection OK — repo: `<owner>/<repo>`"
+
+Error in either case → report HTTP status and message, stop, ask user to fix credentials.
 
 ### 1c. Protect .env
 
@@ -92,24 +96,54 @@ Report: "✓ .env added to .gitignore"
 
 Create all required folders (idempotent — safe if they already exist):
 
+**GitLab:**
 ```bash
 mkdir -p rfc grooming kickoff prd breakdown cr daily-standup \
          .gitlab/issue_templates .gitlab/merge_request_templates
+```
+
+**GitHub:**
+```bash
+mkdir -p rfc grooming kickoff prd breakdown cr daily-standup \
+         .github/ISSUE_TEMPLATE
 ```
 
 Report: "✓ Folders ready"
 
 ---
 
-## Phase 3 — Issue and MR Templates
+## Phase 3 — Issue and MR/PR Templates
 
 Check what already exists:
 
+**GitLab:**
 ```bash
 ls .gitlab/issue_templates/ .gitlab/merge_request_templates/ 2>/dev/null
 ```
 
-For each missing template file, write it directly using the content below.
+**GitHub:**
+```bash
+ls .github/ISSUE_TEMPLATE/ .github/pull_request_template.md 2>/dev/null
+```
+
+Provider-specific template paths:
+| Template | GitLab path | GitHub path |
+|---|---|---|
+| Working Item | `.gitlab/issue_templates/working-item.md` | `.github/ISSUE_TEMPLATE/working-item.md` |
+| Task | `.gitlab/issue_templates/task.md` | `.github/ISSUE_TEMPLATE/task.md` |
+| Defect | `.gitlab/issue_templates/defect.md` | `.github/ISSUE_TEMPLATE/defect.md` |
+| MR/PR review | `.gitlab/merge_request_templates/prd-review.md` | `.github/pull_request_template.md` (single file) |
+
+GitHub issue templates require this YAML frontmatter prepended before the template body:
+```yaml
+---
+name: <Template Name>
+about: <short description>
+---
+```
+GitHub PR template is a single file with no frontmatter.
+
+For each missing template, write to the provider-appropriate path.
 **Skip any file that already exists.**
 
 After writing, report:
@@ -297,21 +331,29 @@ After merging to `develop`, the agent will:
 
 ---
 
-## Phase 4 — GitLab Labels
+## Phase 4 — Labels
 
 Fetch existing labels:
-```
-GET /projects/:id/labels?per_page=100
--H "PRIVATE-TOKEN: <GITLAB_TOKEN>"
-```
+
+**GitLab:** `GET /projects/:id/labels?per_page=100 -H "PRIVATE-TOKEN: <GITLAB_TOKEN>"`
+**GitHub:** `GET /repos/:owner/:repo/labels?per_page=100 -H "Authorization: Bearer <GITHUB_TOKEN>"`
 
 Build the set of existing label names. For each label in the required list below that is NOT already present, create it:
 
+**GitLab:**
 ```bash
 curl -s -X POST "$GITLAB_BASE_URL/projects/$GITLAB_PROJECT_ID/labels" \
   -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"name\": \"$NAME\", \"color\": \"$COLOR\", \"description\": \"$DESC\"}"
+```
+
+**GitHub** (color has no `#` prefix; no description field):
+```bash
+curl -s -X POST "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/labels" \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\": \"$NAME\", \"color\": \"${COLOR#\#}\"}"
 ```
 
 ### Required labels (38 total)
@@ -412,7 +454,7 @@ team:
   project: <project name>
   members:
     - display_name: <display_name>
-      gitlab_username: <GITLAB_USERNAME from .env>
+      username: <active USERNAME from .env>    # GITLAB_USERNAME or GITHUB_USERNAME
       role: <role>        # PM | PO | Dev | QA | SM | DevOps
       email: <email>
 ```
@@ -420,7 +462,7 @@ team:
 Show content and confirm before writing.
 
 ### Ongoing project
-If `team.yaml` exists → check if `GITLAB_USERNAME` has an entry.
+If `team.yaml` exists → check if the active USERNAME has an entry (match against `username` field).
 - Found → "✓ You are already in team.yaml"
 - Not found → ask for `display_name`, `role`, `email`. Append entry. Show diff, confirm before writing.
 
@@ -428,19 +470,29 @@ If `team.yaml` exists → check if `GITLAB_USERNAME` has an entry.
 
 ## Phase 6 — develop Branch
 
-Check if `develop` branch exists:
-```
-GET /projects/:id/repository/branches/develop
--H "PRIVATE-TOKEN: <GITLAB_TOKEN>"
-```
+Ask user: "Do you want to use a `develop` branch for the PM gitflow? (recommended: yes)"
+
+If yes, check if `develop` exists:
+
+**GitLab:** `GET /projects/:id/repository/branches/develop -H "PRIVATE-TOKEN: <GITLAB_TOKEN>"`
+**GitHub:** `GET /repos/:owner/:repo/branches/develop -H "Authorization: Bearer <GITHUB_TOKEN>"`
 
 If 404 → confirm with user, then create from `main`:
+
+**GitLab:**
 ```
-POST /projects/:id/repository/branches
-{ "branch": "develop", "ref": "main" }
+POST /projects/:id/repository/branches { "branch": "develop", "ref": "main" }
 ```
 
-Report: "✓ develop branch created" or "✓ develop branch already exists"
+**GitHub** (get main SHA first, then create ref):
+```
+GET /repos/:owner/:repo/git/ref/heads/main  →  sha
+POST /repos/:owner/:repo/git/refs { "ref": "refs/heads/develop", "sha": "<sha>" }
+```
+
+If user declines → note: "Gitflow model will target `main` directly instead of `develop`."
+
+Report: "✓ develop branch created" or "✓ develop branch already exists" or "⚠ Using main-only flow"
 
 ---
 
@@ -464,11 +516,11 @@ If the repo is empty (no commits) → tell user to create an initial commit manu
 
 ---
 
-## Phase 8 — Manual GitLab UI Steps
+## Phase 8 — Manual UI Steps
 
-These steps require the GitLab web UI and cannot be automated on Free tier.
-Print as a checklist:
+These steps require the web UI and cannot be automated. Print the checklist for the active provider:
 
+**GitLab:**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Manual steps — complete in GitLab web UI:
@@ -477,12 +529,7 @@ Manual steps — complete in GitLab web UI:
 [ ] Issue Board
     Plan → Issue Boards → New board → name it after your project
     Add columns in this order:
-      Todo            (label: Status: Todo)
-      Ready to Start  (label: Status: Ready to Start)
-      Working on it   (label: Status: Working on it)
-      Ready to Review (label: Status: Ready to Review)
-      In Review       (label: Status: In Review)
-      Done            (label: Status: Done)
+      Todo | Ready to Start | Working on it | Ready to Review | In Review | Done
     Create a second board "Defects" filtered on: Group: Defects
 
 [ ] Milestones
@@ -496,17 +543,47 @@ Manual steps — complete in GitLab web UI:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+**GitHub:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Manual steps — complete in GitHub web UI:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Issue Board (Projects v2)
+    Projects → New project → Board layout
+    Add columns: Todo | Ready to Start | Working on it | Ready to Review | In Review | Done
+    Create a second board "Defects" filtered on label: Group: Defects
+
+[ ] Milestones
+    Issues → Milestones → New milestone for each known release
+    e.g. v1.0.0, v1.1.0
+
+[ ] Branch Protection / Rulesets
+    Settings → Branches → Add branch protection rule (or Ruleset)
+      main    — Require PR before merging. No direct push.
+      develop — Require PR before merging. No direct push.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 ---
 
 ## Phase 9 — Verification
 
 Run a final sanity check. For each item, mark ✓ pass or ✗ fail:
 
-1. Re-read `.env` — all four keys present and non-empty
+**GitLab:**
+1. Re-read `.env` — `GITLAB_USERNAME`, `GITLAB_BASE_URL`, `GITLAB_PROJECT_ID`, `GITLAB_TOKEN` all non-empty
 2. `GET /projects/:id` — HTTP 200
 3. `GET /projects/:id/labels?per_page=100` — response count ≥ 38
-4. Read `team.yaml` — `GITLAB_USERNAME` has an entry
-5. `GET /projects/:id/repository/branches/develop` — HTTP 200
+4. Read `team.yaml` — active USERNAME has an entry
+5. `GET /projects/:id/repository/branches/develop` — HTTP 200 (if develop was created)
+
+**GitHub:**
+1. Re-read `.env` — `GITHUB_USERNAME`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_TOKEN` all non-empty
+2. `GET /repos/:owner/:repo` — HTTP 200
+3. `GET /repos/:owner/:repo/labels?per_page=100` — response count ≥ 38
+4. Read `team.yaml` — active USERNAME has an entry
+5. `GET /repos/:owner/:repo/branches/develop` — HTTP 200 (if develop was created)
 
 Print final status report:
 
@@ -514,12 +591,12 @@ Print final status report:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PM Setup Complete
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✓ GitLab connected  (project: <name>, id: <id>)
-✓ Folders           rfc/ grooming/ kickoff/ prd/ breakdown/ cr/ daily-standup/
-✓ Templates         3 issue + 1 MR template
-✓ Labels            38 ready (<X> created, <Y> already existed)
-✓ team.yaml         <N> member(s)
-✓ develop branch    ready
+✓ Provider connected  (GitLab: <project name> | GitHub: <owner>/<repo>)
+✓ Folders             rfc/ grooming/ kickoff/ prd/ breakdown/ cr/ daily-standup/
+✓ Templates           3 issue + 1 MR/PR template
+✓ Labels              38 ready (<X> created, <Y> already existed)
+✓ team.yaml           <N> member(s)
+✓ develop branch      ready (or: main-only flow)
 
 Manual steps remaining:
   → Issue Board, Milestones, Branch Protection (see checklist above)
