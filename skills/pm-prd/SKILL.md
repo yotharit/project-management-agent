@@ -175,7 +175,7 @@ status: draft
 feature_owner: <name>
 last_updated: <YYYY-MM-DD>
 sources:                        # list source files, or [] for scratch PRDs
-  - rfc/KUB-RFC-XXX_<slug>.md
+  - rfc/RFC-XXX_<slug>.md
   - grooming/YYYY-MM-DD-<feature>.md
   - kickoff/YYYY-MM-DD-kickoff-<feature>.md
 ---
@@ -223,7 +223,7 @@ Explicit non-goals (often from RFC §10).
 Unresolved questions. Must be empty before approval.
 
 ## 11. References
-- RFC: rfc/KUB-RFC-XXX_<slug>.md          ← omit if scratch
+- RFC: rfc/RFC-XXX_<slug>.md          ← omit if scratch
 - Grooming: grooming/YYYY-MM-DD-<feature>.md  ← omit if scratch
 - Kickoff: kickoff/YYYY-MM-DD-kickoff-<feature>.md  ← omit if scratch
 - Intake: YYYY-MM-DD (from scratch session)  ← include if scratch

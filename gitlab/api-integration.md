@@ -52,7 +52,7 @@ POST /projects/:id/issues
 }
 ```
 
-Store the returned `iid` as the Working Item identifier (replaces KUB-XXXX).
+Store the returned `iid` as the Working Item identifier (replaces ITEM-XXXX).
 
 Display created issues as a markdown table inline for user verification — same UX as the XLSX row display that is retired.
 
@@ -216,7 +216,7 @@ POST /projects/:id/issues/:iid/notes
 The XLSX migration workflow runs once to import existing monday.com board data into GitLab Issues:
 
 1. Parse XLSX per §8 (existing logic, unchanged).
-2. For each Working Item row: call `POST /projects/:id/issues` as in §6 Stage 4 above. Map `Item ID` (KUB-XXXX) into the issue description as `Legacy ID: KUB-XXXX` for traceability.
+2. For each Working Item row: call `POST /projects/:id/issues` as in §6 Stage 4 above. Map `Item ID` (ITEM-XXXX) into the issue description as `Legacy ID: ITEM-XXXX` for traceability.
 3. For each Task (subitem) row: call `POST /projects/:id/issues` with `Kind: Task` label and `Part of #<parent_iid>` in description.
 4. Apply the current `Status` from XLSX to the matching `Status:*` label.
 5. After all issues are created, run the §5 rollup recompute across all WIs to validate.
@@ -246,7 +246,7 @@ GitLab Free has no computed or formula fields. The agent is solely responsible f
 | Board group (Client, Service…) | `Group:*` label |
 | Working Item | Issue with `Kind: Working Item` label |
 | Task (subitem) | Issue with `Kind: Task` label + `Part of #<wi_iid>` |
-| KUB-XXXX (Item ID) | GitLab issue `iid` (e.g. `#42`) |
+| ITEM-XXXX (Item ID) | GitLab issue `iid` (e.g. `#42`) |
 | Owner field (comma-separated) | GitLab assignees (multiple via `assignee_ids`) |
 | Status column | `Status:*` label (one active at a time) |
 | Dev Status column (defects) | `Dev Status:*` label |

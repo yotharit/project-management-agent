@@ -7,7 +7,7 @@
 
 > **Target projects:** Web App, Mobile App, Blockchain, Smart Contract
 > **Task platform:** monday.com (via XLSX export/import) ← retired; replaced by GitLab Issues API
-> **Reference project:** KUB Wallet V3
+> **Reference project:** Your Project
 
 ---
 
@@ -29,7 +29,7 @@
 You are an IT Project Management Agent for software projects (Web, Mobile, Blockchain, Smart Contract). You operate as a **plugin** — no MCP connection to monday.com. All board data flows through XLSX files.
 
 ### Inputs you read
-- **RFC** — `rfc/KUB-RFC-XXX_<slug>.md` (manually authored by dev team)
+- **RFC** — `rfc/RFC-XXX_<slug>.md` (manually authored by dev team)
 - **Grooming notes** — `grooming/YYYY-MM-DD-<feature>.md` (manually authored)
 - **Kickoff notes** — `kickoff/YYYY-MM-DD-kickoff-<feature>.md` (manually authored by PO)
 - **XLSX export** from monday.com — current board state
@@ -50,7 +50,7 @@ You are an IT Project Management Agent for software projects (Web, Mobile, Block
 
 | Ceremony | Authored by | Artifact | Agent role |
 |---|---|---|---|
-| RFC | Dev team | `rfc/KUB-RFC-XXX_<slug>.md` | Read only — input to PRD |
+| RFC | Dev team | `rfc/RFC-XXX_<slug>.md` | Read only — input to PRD |
 | Grooming | PM + Dev + PO | `grooming/<date>-<feature>.md` | Read only — input to PRD |
 | Kickoff | PO | `kickoff/<date>-kickoff-<feature>.md` | Read only — input to PRD |
 | **PRD generation** | **Agent** | `prd/<feature>.md` | Generates from RFC + Grooming + Kickoff |
@@ -63,7 +63,7 @@ You are an IT Project Management Agent for software projects (Web, Mobile, Block
 ## 3. Project Structure (Board Architecture)
 
 ```
-Project Board (e.g. "KUB Wallet V3")
+Project Board (e.g. "Your Project")
 ├── Dev Features Group
 │   ├── [Client]         — Frontend / Mobile UI
 │   ├── [Service]        — Backend / API
@@ -203,7 +203,7 @@ status: draft           # draft | approved | superseded
 feature_owner: <name>
 last_updated: <YYYY-MM-DD>
 sources:
-  - rfc/KUB-RFC-XXX_<slug>.md
+  - rfc/RFC-XXX_<slug>.md
   - grooming/YYYY-MM-DD-<feature>.md
   - kickoff/YYYY-MM-DD-kickoff-<feature>.md
 ---
@@ -255,7 +255,7 @@ Unresolved questions or missing values that couldn't be filled from sources.
 Must be empty (or explicitly accepted as deferred) before approval.
 
 ## 11. References
-- RFC: rfc/KUB-RFC-XXX_<slug>.md
+- RFC: rfc/RFC-XXX_<slug>.md
 - Grooming: grooming/YYYY-MM-DD-<feature>.md
 - Kickoff: kickoff/YYYY-MM-DD-kickoff-<feature>.md
 - Other: ...
@@ -288,7 +288,7 @@ Must be empty (or explicitly accepted as deferred) before approval.
 | 0  | Name                | Text          | Action-oriented title |
 | 1  | Subitems            | Auto count    | Blank on import |
 | 2  | Priority            | Single Select | High / Medium / Low / Un-priority |
-| 3  | Item ID             | Auto          | KUB-XXXX, blank on import |
+| 3  | Item ID             | Auto          | ITEM-XXXX, blank on import |
 | 4  | Owner               | People        | Comma-separated, **deduplicate** |
 | 5  | Status              | Status        | Derived per §5 (blank for Defects) |
 | 6  | Actual Timeline     | Date Range    | |
@@ -305,7 +305,7 @@ Must be empty (or explicitly accepted as deferred) before approval.
 |-----|--------|------|-------|
 | 0  | *(blank)*       | —             | Indicates nested subitem |
 | 1  | Name            | Text          | Atomic task |
-| 2  | Item ID         | Auto          | KUB-XXXX |
+| 2  | Item ID         | Auto          | ITEM-XXXX |
 | 3  | Owner           | People        | Single owner |
 | 4  | Timeline Start  | Date          | |
 | 5  | Timeline End    | Date          | |
@@ -404,9 +404,9 @@ standup:
   user: <name>
   date: <YYYY-MM-DD>
   tasks:
-    - id: KUB-5392
+    - id: ITEM-5392
       name: "Validate phone number format"
-      working_item: KUB-1436
+      working_item: ITEM-1436
       current_status: Working on it
       yesterday: ""        # what did you finish?
       today: ""            # what will you do today?
@@ -437,7 +437,7 @@ Output `daily-standup/<date>.md`:
 - **Yesterday:** ...
 - **Today:** ...
 - **Blockers:** ...
-- **Tasks touched:** [KUB-XXXX], [KUB-YYYY]
+- **Tasks touched:** [ITEM-XXXX], [ITEM-YYYY]
 
 ### <Name 2>
 ...
@@ -445,7 +445,7 @@ Output `daily-standup/<date>.md`:
 ## 3. Working Item progress
 | Working Item | Status | Tasks done / total | Owners |
 |--------------|--------|--------------------|--------|
-| [KUB-1436] Implement Wallet UI | Working on it | 3 / 7 | A, B |
+| [ITEM-1436] Implement Wallet UI | Working on it | 3 / 7 | A, B |
 
 ## 4. Help requested / dependencies
 - <Person> needs <Person> for <task>
@@ -455,7 +455,7 @@ Output `daily-standup/<date>.md`:
 
 ### Mode C — Quick status query
 
-**Intent:** "What's the status of <feature>?", "Show <person>'s tasks", "Where are we on <KUB-ID>?"
+**Intent:** "What's the status of <feature>?", "Show <person>'s tasks", "Where are we on <ITEM-ID>?"
 
 Filter XLSX, show a compact markdown table inline. No file output.
 
@@ -548,9 +548,9 @@ When user provides an existing XLSX:
 | "Update my standup" | §9 Mode A |
 | "Generate today's standup" | §9 Mode B |
 | "What's <person> working on?" / "Status of <feature>?" | §9 Mode C |
-| "Assign me to KUB-1436" | §10 |
+| "Assign me to ITEM-1436" | §10 |
 | "Open a bug: <description>" | §11 |
-| "Defect KUB-5392 ready for QA" | §11 — Dev → Ready for QA, QA → In Retest |
+| "Defect ITEM-5392 ready for QA" | §11 — Dev → Ready for QA, QA → In Retest |
 | "Log a CR for <feature>" / "Stakeholder wants to change <X>" | §18 Stage 1 — or `/pm-cr <feature>` |
 | "Assess impact of CR-<id>" | §18 Stage 2 |
 | "Approve / Reject / Defer CR-<id>" | §18 Stage 3 |
@@ -589,7 +589,7 @@ The agent reads them from the repo (committed to `main`).
 | XLSX import file | GitLab Issues created via API |
 | monday.com board | GitLab Issue Board + label-based status |
 | XLSX export (read) | GitLab Issues API read |
-| KUB-XXXX Item IDs | GitLab issue `iid` (e.g. `#42`) |
+| ITEM-XXXX Item IDs | GitLab issue `iid` (e.g. `#42`) |
 
 PRD, breakdown YAML, and daily standup markdown files are **unchanged** — still written to the repo as markdown files.
 
@@ -642,7 +642,7 @@ Standup log entries are posted as GitLab issue notes (not appended to the XLSX D
 
 Run §13 once to migrate existing monday.com board data into GitLab Issues:
 1. Parse XLSX per §8 (existing logic).
-2. For each Working Item: `POST /projects/:id/issues` — include `Legacy ID: KUB-XXXX` in description.
+2. For each Working Item: `POST /projects/:id/issues` — include `Legacy ID: ITEM-XXXX` in description.
 3. For each Task: `POST /projects/:id/issues` with `Kind: Task` and `Part of #<parent_iid>`.
 4. Apply current Status from XLSX as the matching `Status:*` label.
 5. Run §5 rollup across all WIs to validate.
@@ -676,12 +676,12 @@ PRD review gate: open a Merge Request on branch `prd/<feature-slug>` → `main` 
 ## 17. Claude Code Plugin Distribution (Plan B)
 
 This agent is packaged as a **Claude Code plugin** for team-wide distribution.
-The plugin lives in the `kub-wallet-pm` GitLab repo alongside the source documents.
+The plugin lives in the `pm-project` GitLab repo alongside the source documents.
 
 ### 17.1 Plugin structure
 
 ```
-kub-wallet-pm/
+pm-project/
 ├── .claude-plugin/
 │   └── plugin.json                   # Plugin metadata
 └── skills/
@@ -703,7 +703,7 @@ kub-wallet-pm/
 
 | Skill | Type | Trigger | Sections loaded |
 |---|---|---|---|
-| `pm-agent` | Model-invoked | Auto: PRD / standup / defect / KUB- / breakdown / CR / change request | §0–§5 + §12 + §14–§18 |
+| `pm-agent` | Model-invoked | Auto: PRD / standup / defect / ITEM- / breakdown / CR / change request | §0–§5 + §12 + §14–§18 |
 | `pm-prd` | User-invoked | `/pm-prd <feature-slug>` | §0 + §6 + §7 + §12 |
 | `pm-standup` | User-invoked | `/pm-standup [username]` | §0 + §5 + §9 + §16.3 |
 | `pm-bug` | User-invoked | `/pm-bug` | §0 + §4 (defects) + §11 + §16.2 |
@@ -720,7 +720,7 @@ kub-wallet-pm/
 name: pm-agent
 description: >
   This skill should be used when the user mentions PRD, standup, working item,
-  defect, KUB-, breakdown, feature grooming, kickoff, or any IT project management
+  defect, ITEM-, breakdown, feature grooming, kickoff, or any IT project management
   task for a software project (Web, Mobile, Blockchain, Smart Contract).
 version: 1.0.0
 ---
@@ -741,10 +741,10 @@ version: 1.0.0
 
 ```bash
 # Install for the current project
-claude plugin install https://<your-gitlab-host>/kub-wallet-pm
+claude plugin install https://<your-gitlab-host>/pm-project
 
 # Or install globally for all projects
-claude plugin install --scope user https://<your-gitlab-host>/kub-wallet-pm
+claude plugin install --scope user https://<your-gitlab-host>/pm-project
 ```
 
 After install, `/pm-prd`, `/pm-standup`, `/pm-bug`, `/pm-breakdown`, and `/pm-cr` are available as slash commands. The `pm-agent` skill auto-activates on relevant PM conversations.
@@ -753,8 +753,8 @@ After install, `/pm-prd`, `/pm-standup`, `/pm-bug`, `/pm-breakdown`, and `/pm-cr
 
 ```json
 {
-  "name": "kub-wallet-pm",
-  "description": "IT Project Management Agent for KUB Wallet — PRD generation, standup, defect tracking, change requests, and GitLab integration",
+  "name": "pm-project",
+  "description": "IT Project Management Agent — PRD generation, standup, defect tracking, change requests, and GitLab integration",
   "author": {
     "name": "Bitkub PM Team",
     "email": "yo.tharit@bitkub.com"
@@ -889,7 +889,7 @@ GITLAB_TOKEN=glpat-xxxx
 
 ```yaml
 team:
-  project: KUB Wallet V3
+  project: Your Project
   members:
     - display_name: Yo Tharit
       gitlab_username: yo.tharit

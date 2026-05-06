@@ -5,7 +5,7 @@
 # Role values: PM | PO | Dev | QA | SM | DevOps
 
 team:
-  project: KUB Wallet V3
+  project: Your Project
   members:
     - display_name: Yo Tharit
       gitlab_username: yo.tharit

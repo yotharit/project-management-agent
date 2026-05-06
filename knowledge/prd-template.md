@@ -17,7 +17,7 @@ status: draft           # draft | approved
 feature_owner: <name>
 last_updated: <YYYY-MM-DD>
 sources:                # list source files; use [] for scratch (intake) PRDs
-  - rfc/KUB-RFC-XXX_<slug>.md
+  - rfc/RFC-XXX_<slug>.md
   - grooming/YYYY-MM-DD-<feature>.md
   - kickoff/YYYY-MM-DD-kickoff-<feature>.md
 ---

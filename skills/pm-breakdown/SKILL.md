@@ -182,7 +182,7 @@ POST /repos/:owner/:repo/issues
 }
 ```
 
-3. Store returned `iid` — this is the Working Item ID (replaces KUB-XXXX).
+3. Store returned `iid` — this is the Working Item ID (replaces ITEM-XXXX).
 4. Display all created issues as markdown table inline for verification before creating.
 5. Tasks (subitems) are NOT created here — Dev/QA create their own under Working Items.
 

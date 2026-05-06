@@ -604,7 +604,7 @@ Manual steps remaining:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Ready to start your first feature:
 
-  Dev team  → write RFC      rfc/KUB-RFC-001_<slug>.md
+  Dev team  → write RFC      rfc/RFC-001_<slug>.md
                               (see knowledge/rfc-template.md)
   PM        → grooming       grooming/YYYY-MM-DD-<feature>.md
                               (see knowledge/mom-template.md)

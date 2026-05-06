@@ -1,7 +1,7 @@
 # RFC Input
 
 ## 1. RFC Title
-KUB-RFC-[NUMBER] — [Short Title] — [คำอธิบายสั้น ๆ ภาษาไทย]
+RFC-[NUMBER] — [Short Title] — [คำอธิบายสั้น ๆ ภาษาไทย]
 
 ## 2. Related Grooming
 - Epic/Ticket: [Ticket ID] — [Title]
@@ -145,5 +145,5 @@ flowchart LR
 ## 13. References
 - [Meeting/Grooming YYYY-MM-DD]: `[path/to/file.md]` — [สรุปว่ามี decision อะไรบ้าง]
 - [Document]: `[path/to/file]`
-- [Related RFC]: KUB-RFC-[N] — [ชื่อ]
+- [Related RFC]: RFC-[N] — [ชื่อ]
 - [External link]: [URL หรือ Google Sheet]

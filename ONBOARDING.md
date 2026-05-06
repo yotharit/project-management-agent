@@ -42,7 +42,7 @@ Use this path when you are starting a brand-new project with no existing board o
 
 ### Step 1: Create the PM docs repo and folder structure
 
-Create a new repo (e.g. `kub-wallet-pm`) and clone it locally. From the repo root, create all required folders:
+Create a new repo (e.g. `pm-project`) and clone it locally. From the repo root, create all required folders:
 
 **GitLab:**
 ```bash
@@ -64,7 +64,7 @@ From this plugin repo root, copy the templates into your PM docs repo. Replace `
 
 ```bash
 PLUGIN=/path/to/bitkub-pm-skills   # where you cloned this plugin repo
-PM_REPO=/path/to/kub-wallet-pm     # your PM docs repo
+PM_REPO=/path/to/pm-project     # your PM docs repo
 
 # GitLab:
 cp "$PLUGIN/gitlab/templates/issue/"*.md          "$PM_REPO/.gitlab/issue_templates/"
@@ -300,7 +300,7 @@ Copy templates you don't already have from this plugin repo. Replace `$PLUGIN` a
 
 ```bash
 PLUGIN=/path/to/bitkub-pm-skills
-PM_REPO=/path/to/kub-wallet-pm
+PM_REPO=/path/to/pm-project
 
 # Copy only files that don't exist yet (-n = no-clobber)
 # GitLab:
@@ -402,7 +402,7 @@ The agent will:
 2. Validate — flag missing Type, Priority, duplicate IDs, unknown statuses
 3. Recompute — apply status rollup rules to all Working Items
 4. Show a summary and wait for your approval
-5. Create Issues for each Working Item and Task (with `Legacy ID: KUB-XXXX` in description)
+5. Create Issues for each Working Item and Task (with `Legacy ID: ITEM-XXXX` in description)
 6. Report counts and any flagged items
 
 After confirming, review 5–10 issues on the board to verify labels, milestones, and `Part of #<iid>` parent–child links look correct.

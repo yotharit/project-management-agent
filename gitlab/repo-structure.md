@@ -2,13 +2,13 @@
 
 ## Recommended repo layout
 
-Create a dedicated repo (e.g. `kub-wallet-pm`) on your self-hosted GitLab.
+Create a dedicated repo (e.g. `pm-project`) on your self-hosted GitLab.
 Copy the template files from `gitlab/templates/` into `.gitlab/` as shown below.
 
 ```
-kub-wallet-pm/                          ← GitLab repo root
+pm-project/                             ← GitLab repo root
 ├── rfc/
-│   └── KUB-RFC-XXX_<slug>.md
+│   └── RFC-XXX_<slug>.md
 ├── grooming/
 │   └── YYYY-MM-DD-<feature>.md
 ├── kickoff/
@@ -73,7 +73,7 @@ Configure at: **Settings → Repository → Protected branches**
 
 ## Issue Board setup
 
-Create a board at **Plan → Issue Boards → New board** named after the project (e.g. `KUB Wallet V3`).
+Create a board at **Plan → Issue Boards → New board** named after the project (e.g. `Your Project`).
 
 Add columns in this order — each column filters by one `Status:*` label:
 
@@ -90,7 +90,7 @@ Add a separate board for Defects filtering on `Group: Defects`.
 
 ## One-time setup checklist
 
-- [ ] Create repo `kub-wallet-pm` (or embed `.gitlab/` in your existing project repo)
+- [ ] Create repo `pm-project` (or embed `.gitlab/` in your existing project repo)
 - [ ] Copy issue and MR templates into `.gitlab/`
 - [ ] Create all labels from `gitlab/labels.yaml` (see label creation script below)
 - [ ] Protect `main` branch
@@ -143,7 +143,7 @@ create_label "Type: Issue"      "#6554c0" ""
 create_label "Type: Deployment" "#403294" ""
 
 # Platform
-create_label "Platform: Kub Wallet"     "#00b8d9" ""
+create_label "Platform: App"            "#00b8d9" ""
 create_label "Platform: iOS"            "#00b8d9" ""
 create_label "Platform: Android"        "#00b8d9" ""
 create_label "Platform: Web"            "#00b8d9" ""

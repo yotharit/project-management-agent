@@ -1,4 +1,4 @@
-# KUB Wallet PM Agent — Claude Code Plugin
+# PM Agent — Claude Code Plugin
 
 IT Project Management Agent for software projects (Web, Mobile, Blockchain, Smart Contract).
 Covers PRD generation, sprint breakdown, daily standup, defect tracking, and change requests — all via GitLab or GitHub Issues.
@@ -34,7 +34,7 @@ Covers PRD generation, sprint breakdown, daily standup, defect tracking, and cha
 | Claude Code CLI | `npm install -g @anthropic-ai/claude-code` |
 | GitLab **or** GitHub | GitLab: self-hosted, Free tier or above. GitHub: any plan |
 | Personal Access Token | GitLab: scope `api` — Profile → Access Tokens. GitHub: scope `repo` — Settings → Developer settings |
-| A project for PM docs | e.g. `kub-wallet-pm` — GitLab or GitHub |
+| A project for PM docs | e.g. `pm-project` — GitLab or GitHub |
 
 ---
 
@@ -76,11 +76,11 @@ Do this once when setting up the project board. Skip if already done.
 
 ### 3a. Create the PM docs repo
 
-Create a new repo (e.g. `kub-wallet-pm`) with this folder structure:
+Create a new repo (e.g. `pm-project`) with this folder structure:
 
 **GitLab:**
 ```
-kub-wallet-pm/
+pm-project/
 ├── rfc/
 ├── grooming/
 ├── kickoff/
@@ -95,7 +95,7 @@ kub-wallet-pm/
 
 **GitHub:**
 ```
-kub-wallet-pm/
+pm-project/
 ├── rfc/
 ├── grooming/
 ├── kickoff/
@@ -147,7 +147,7 @@ This creates all 38 labels: `Kind:*`, `Status:*`, `Priority:*`, `Type:*`, `Platf
 
 ### 3d. Set up the Issue Board
 
-In GitLab: **Plan → Issue Boards → New board** (name it after the project, e.g. `KUB Wallet V3`).
+In GitLab: **Plan → Issue Boards → New board** (name it after the project, e.g. `Your Project`).
 
 Add columns in this order:
 
@@ -253,7 +253,7 @@ You do not need a slash command for general PM conversations. The `pm-agent` ski
 
 ```
 "What's the status of the transaction limit feature?"
-"Who is working on KUB-42?"
+"Who is working on ITEM-42?"
 "Assign me to issue #15"
 "Is the PRD for registration approved?"
 ```
@@ -532,9 +532,9 @@ bitkub-pm-skills/              ← this plugin repo
     └── generation-prompt.md   ← DEPRECATED: original monday.com spec (historical only)
 ```
 
-Your **PM docs repo** (`kub-wallet-pm`) on GitLab holds the actual project artifacts:
+Your **PM docs repo** (`pm-project`) on GitLab holds the actual project artifacts:
 ```
-kub-wallet-pm/
+pm-project/
 ├── rfc/           ← authored by dev team
 ├── grooming/      ← authored by PM + Dev + PO
 ├── kickoff/       ← authored by PO
