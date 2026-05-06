@@ -619,13 +619,13 @@ Ready to start your first feature:
 
 After verification, if the user has existing Working Items in a monday.com XLSX export, offer:
 
-> "Do you have an existing monday.com XLSX export to migrate to GitLab Issues? (yes/no)"
+> "Do you have an existing monday.com XLSX export to migrate to Issues? (yes/no)"
 
 If yes → hand off:
 ```
-Migrate this XLSX to GitLab issues
+Migrate this XLSX to issues
 ```
 
-The agent parses the XLSX, validates, shows a preview table, and creates GitLab Issues on confirmation. After migration, recomputes all WI statuses.
+The agent parses the XLSX, validates, shows a preview table, and creates Issues (GitLab or GitHub) on confirmation. After migration, recomputes all WI statuses.
 
 If no → skip.

@@ -49,7 +49,7 @@ Commit message by stage:
 - Stage 2: `cr(transaction-limit-001): impact assessment`
 - Stage 3 decision: `cr(transaction-limit-001): approved` / `rejected` / `deferred`
 - Stage 4 Path A: `cr(transaction-limit-001): apply — revise PRD to v1.1`
-- Stage 4 Path B: `cr(transaction-limit-001): apply — GitLab issues created`
+- Stage 4 Path B: `cr(transaction-limit-001): apply — issues created`
 
 ### Stage 4 Path A — also commit PRD changes
 ```bash

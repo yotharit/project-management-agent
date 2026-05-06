@@ -147,9 +147,11 @@ This creates all 38 labels: `Kind:*`, `Status:*`, `Priority:*`, `Type:*`, `Platf
 
 ### 3d. Set up the Issue Board
 
-In GitLab: **Plan → Issue Boards → New board** (name it after the project, e.g. `Your Project`).
+**GitLab:** **Plan → Issue Boards → New board** (name it after the project, e.g. `Your Project`).
 
-Add columns in this order:
+**GitHub:** **Projects → New project → Board layout** (name it after the project).
+
+Add columns in this order (both providers):
 
 | Column | Label filter |
 |---|---|
@@ -164,15 +166,19 @@ Create a separate board named `Defects` filtered on `Group: Defects`.
 
 ### 3e. Create Milestones for known releases
 
-**Plan → Milestones → New milestone** for each release, e.g. `v3.0.0-beta.24`.
+**GitLab:** **Plan → Milestones → New milestone** for each release, e.g. `v3.0.0-beta.24`.
+
+**GitHub:** **Issues → Milestones → New milestone** for each release.
 
 ### 3f. Protect branches
 
-**Settings → Repository → Protected branches**
+**GitLab:** **Settings → Repository → Protected branches**
+
+**GitHub:** **Settings → Branches → Add branch protection rule** (or Ruleset)
 
 | Branch | Rule |
 |---|---|
-| `main` | No direct push. All changes via MR from `develop`. |
+| `main` | No direct push. All changes via MR/PR from `develop`. |
 | `develop` | No direct push. All artifact branches merge here first. |
 
 ---
@@ -532,7 +538,7 @@ bitkub-pm-skills/              ← this plugin repo
     └── generation-prompt.md   ← DEPRECATED: original monday.com spec (historical only)
 ```
 
-Your **PM docs repo** (`pm-project`) on GitLab holds the actual project artifacts:
+Your **PM docs repo** (`pm-project`) on GitLab or GitHub holds the actual project artifacts:
 ```
 pm-project/
 ├── rfc/           ← authored by dev team

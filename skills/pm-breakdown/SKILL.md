@@ -53,7 +53,7 @@ git push origin breakdown/<feature-slug>
 ### After YAML approval and archiving (Stage 4, before creating issues)
 ```bash
 git add breakdown/<feature-slug>_v1.0.yaml
-git commit -m "breakdown(<feature-slug>): approve v1.0 — apply to GitLab issues"
+git commit -m "breakdown(<feature-slug>): approve v1.0 — apply to issues"
 git push origin breakdown/<feature-slug>
 ```
 
@@ -200,7 +200,7 @@ GET /repos/:owner/:repo/milestones      # filter client-side by .title
 POST /repos/:owner/:repo/milestones { "title": "<release>", "due_on": "YYYY-MM-DDT00:00:00Z" }
 ```
 
-### YAML field → GitLab label mapping
+### YAML field → Issue field mapping
 
 | YAML field | GitLab field |
 |---|---|
